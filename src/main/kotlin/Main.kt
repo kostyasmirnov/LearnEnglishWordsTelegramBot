@@ -13,7 +13,7 @@ fun main() {
         dictionary.add(word)
     }
 
-    fun getStatistic() {
+    fun printStatistic() : String {
         val totalWords = dictionary.size
         val learnedWords = dictionary.count { it.correctAnswersCount >= 3 }
 
@@ -21,7 +21,7 @@ fun main() {
             (learnedWords.toDouble() / totalWords.toDouble() * 100).toInt()
         } else 0
 
-        println("Выучено $learnedWords из $totalWords слов | $percentageLearned%")
+        return "Выучено $learnedWords из $totalWords слов | $percentageLearned%"
 
     }
 
@@ -32,7 +32,7 @@ fun main() {
         val inputForStartMessage: Int = readln().toInt()
         when (inputForStartMessage) {
             1 -> TODO()
-            2 -> getStatistic()
+            2 -> printStatistic()
             0 -> break
             else -> println(WARNING_MESSAGE)
         }
@@ -48,4 +48,4 @@ data class Word(
 )
 
 const val START_MESSAGE = "Меню:\n1 - Учить слова\n2 - Статистика\n0 - Выход"
-const val WARNING_MESSAGE = "Для выбора пукнта из меню, введите цифру"
+const val WARNING_MESSAGE = "Для выбора пункта из меню, введите цифру"
