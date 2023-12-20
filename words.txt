@@ -2,3 +2,4 @@ hello|привет|0
 dog|собака|0
 cat|кошка|1
 thank you|спасибо|2
+properties|характеристики|1
