@@ -13,7 +13,7 @@ fun main() {
         dictionary.add(word)
     }
 
-    fun printStatistic() : String {
+    fun printStatistic(): String {
         val totalWords = dictionary.size
         val learnedWords = dictionary.count { it.correctAnswersCount >= 3 }
 
@@ -25,13 +25,46 @@ fun main() {
 
     }
 
+    fun learnWords() {
+        while (true) {
+
+            val notLearnedWords =
+                dictionary.filter { it.correctAnswersCount < 3 }
+                    .mapIndexed { index: Int, word: Word -> word.translate }
+
+            if (notLearnedWords.isEmpty()) {
+                println(LEARNED_ALL_WORDS)
+                break
+            } else {
+
+                val variantsAnswer: String = dictionary.filter { it.correctAnswersCount < 3 }
+                    .mapIndexed { index: Int, word: Word -> "${index + 1}. ${word.translate}" }.toString()
+
+                val mysteryWord: String = dictionary.filter { it.correctAnswersCount < 3 }
+                    .mapIndexed { index: Int, word: Word -> word.original }.take(1).toString()
+                val mysteryWordAnswer: String = dictionary.filter { it.correctAnswersCount < 3 }
+                    .mapIndexed { index: Int, word: Word -> word.translate }.take(1).firstOrNull().toString()
+
+                println("Как переводиться $mysteryWord?\n$variantsAnswer")
+
+                val userAnswer = readln()
+                if (userAnswer.equals(mysteryWordAnswer, ignoreCase = true)) {
+                    println("Верно!")
+                    val wordToUpdate = dictionary.find { it.translate == userAnswer }
+                    wordToUpdate?.let { it.correctAnswersCount++ }
+                } else println("Неверно")
+
+            }
+        }
+    }
+
     dictionary.forEach { println(it) }
 
     while (true) {
         println(START_MESSAGE)
         val inputForStartMessage: Int = readln().toInt()
         when (inputForStartMessage) {
-            1 -> TODO()
+            1 -> learnWords()
             2 -> printStatistic()
             0 -> break
             else -> println(WARNING_MESSAGE)
@@ -44,8 +77,9 @@ fun main() {
 data class Word(
     val original: String,
     var translate: String,
-    val correctAnswersCount: Int = 0,
+    var correctAnswersCount: Int = 0,
 )
 
 const val START_MESSAGE = "Меню:\n1 - Учить слова\n2 - Статистика\n0 - Выход"
 const val WARNING_MESSAGE = "Для выбора пункта из меню, введите цифру"
+const val LEARNED_ALL_WORDS = "Вы выучили все слова"
