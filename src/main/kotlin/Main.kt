@@ -13,7 +13,7 @@ fun main() {
         dictionary.add(word)
     }
 
-    fun printStatistic(): String {
+    fun printStatistic() {
         val totalWords = dictionary.size
         val learnedWords = dictionary.count { it.correctAnswersCount >= 3 }
 
@@ -21,7 +21,7 @@ fun main() {
             (learnedWords.toDouble() / totalWords.toDouble() * 100).toInt()
         } else 0
 
-        return "Выучено $learnedWords из $totalWords слов | $percentageLearned%"
+        println("Выучено $learnedWords из $totalWords слов | $percentageLearned%")
 
     }
 
@@ -30,29 +30,18 @@ fun main() {
 
             val notLearnedWords =
                 dictionary.filter { it.correctAnswersCount < 3 }
-                    .mapIndexed { index: Int, word: Word -> word.translate }
 
             if (notLearnedWords.isEmpty()) {
                 println(LEARNED_ALL_WORDS)
                 break
             } else {
 
-                val variantsAnswer: String = dictionary.filter { it.correctAnswersCount < 3 }
-                    .mapIndexed { index: Int, word: Word -> "${index + 1}. ${word.translate}" }.toString()
-
-                val mysteryWord: String = dictionary.filter { it.correctAnswersCount < 3 }
-                    .mapIndexed { index: Int, word: Word -> word.original }.take(1).toString()
-                val mysteryWordAnswer: String = dictionary.filter { it.correctAnswersCount < 3 }
-                    .mapIndexed { index: Int, word: Word -> word.translate }.take(1).firstOrNull().toString()
-
+                val variantsAnswer: String = notLearnedWords.mapIndexed { index: Int, word: Word -> word.translate }.shuffled().toString()
+                val mysteryWord: String = notLearnedWords.mapIndexed{ index: Int, word: Word -> word.original}.toString().take(4)
                 println("Как переводиться $mysteryWord?\n$variantsAnswer")
 
                 val userAnswer = readln()
-                if (userAnswer.equals(mysteryWordAnswer, ignoreCase = true)) {
-                    println("Верно!")
-                    val wordToUpdate = dictionary.find { it.translate == userAnswer }
-                    wordToUpdate?.let { it.correctAnswersCount++ }
-                } else println("Неверно")
+
 
             }
         }
