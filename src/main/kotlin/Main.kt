@@ -36,13 +36,11 @@ fun main() {
                 break
             } else {
 
-                val variantsAnswer: String = notLearnedWords.mapIndexed { index: Int, word: Word -> word.translate }.shuffled().toString()
-                val mysteryWord: String = notLearnedWords.mapIndexed{ index: Int, word: Word -> word.original}.toString().take(4)
+                val variantsAnswer: String =
+                    notLearnedWords.mapIndexed { index: Int, word: Word -> word.translate }.shuffled().toString()
+                val mysteryWord: String =
+                    notLearnedWords.mapIndexed { index: Int, word: Word -> word.original }.toString().take(4)
                 println("Как переводиться $mysteryWord?\n$variantsAnswer")
-
-                val userAnswer = readln()
-
-
             }
         }
     }
