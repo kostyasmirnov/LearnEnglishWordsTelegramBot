@@ -55,17 +55,23 @@ fun learnWords(dictionary: List<Word>) {
             break
         } else {
 
-            val variantsAnswer: String =
-                notLearnedWords.mapIndexed { index: Int, word: Word -> word.translate }.shuffled().toString()
             val (mysteryWord, mysteryWordAnswer) = notLearnedWords.first().run { original to translate }
-            println("Как переводиться $mysteryWord?\n$variantsAnswer")
+            println("Как переводиться $mysteryWord? Введите номер")
+            val variantsAnswer = notLearnedWords.take(4)
+                .forEachIndexed { index, word -> println("${index + 1}. ${word.translate}") }
+                .also { println("0. Выход в меню") }
 
-            val userAnswer = readln()
-            if (userAnswer.equals(mysteryWordAnswer, ignoreCase = true)) {
+            val userAnswer = readln().toInt()
+            if (userAnswer in 1..4 && notLearnedWords[userAnswer - 1].translate.equals(
+                    mysteryWordAnswer,
+                    ignoreCase = true
+                )
+            ) {
                 println("Верно!")
-                val wordToUpdate = dictionary.find { it.translate == userAnswer }
+                val wordToUpdate = dictionary.find { it.translate == mysteryWordAnswer }
                 wordToUpdate?.let { it.correctAnswersCount++ }
-            } else println("Неверно")
+            } else if (userAnswer == 0) break
+            else println("Неверно")
         }
     }
 }
