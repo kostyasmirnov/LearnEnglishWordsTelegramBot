@@ -43,26 +43,25 @@ fun printStatistic(dictionary: List<Word>) {
 
 fun learnWords(dictionary: List<Word>) {
 
-    var isLearned = false
-    while (!isLearned) {
+    while (true) {
 
         val notLearnedWords =
             dictionary.filter { it.correctAnswersCount < 3 }
+        val variantsAnswer = notLearnedWords.shuffled().take(4)
 
         if (notLearnedWords.isEmpty()) {
             println(LEARNED_ALL_WORDS)
-            isLearned = true
             break
-        } else {
+        };
+        if (notLearnedWords.isNotEmpty()) {
 
-            val (mysteryWord, mysteryWordAnswer) = notLearnedWords.first().run { original to translate }
+            val (mysteryWord, mysteryWordAnswer) = variantsAnswer.random().run { original to translate }
             println("Как переводиться $mysteryWord? Введите номер")
-            val variantsAnswer = notLearnedWords.take(4)
-                .forEachIndexed { index, word -> println("${index + 1}. ${word.translate}") }
+            variantsAnswer.forEachIndexed { index, word -> println("${index + 1}. ${word.translate}") }
                 .also { println("0. Выход в меню") }
 
             val userAnswer = readln().toInt()
-            if (userAnswer in 1..4 && notLearnedWords[userAnswer - 1].translate.equals(
+            if (userAnswer in 1..4 && variantsAnswer[userAnswer - 1].translate.equals(
                     mysteryWordAnswer,
                     ignoreCase = true
                 )
