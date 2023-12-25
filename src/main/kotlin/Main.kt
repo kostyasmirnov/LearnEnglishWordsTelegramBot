@@ -42,36 +42,31 @@ fun printStatistic(dictionary: List<Word>) {
 }
 
 fun learnWords(dictionary: List<Word>) {
-
     while (true) {
-
-        val notLearnedWords =
-            dictionary.filter { it.correctAnswersCount < 3 }
-        val variantsAnswer = notLearnedWords.shuffled().take(4)
+        val notLearnedWords = dictionary.filter { it.correctAnswersCount < FILTER_CORRECT_ANSWERS }
+        val variantsAnswer: List<Word> = notLearnedWords.shuffled().take(NUMBER_OF_ANSWER_OPTIONS)
 
         if (notLearnedWords.isEmpty()) {
             println(LEARNED_ALL_WORDS)
             break
-        };
-        if (notLearnedWords.isNotEmpty()) {
-
-            val (mysteryWord, mysteryWordAnswer) = variantsAnswer.random().run { original to translate }
-            println("Как переводиться $mysteryWord? Введите номер")
-            variantsAnswer.forEachIndexed { index, word -> println("${index + 1}. ${word.translate}") }
-                .also { println("0. Выход в меню") }
-
-            val userAnswer = readln().toInt()
-            if (userAnswer in 1..4 && variantsAnswer[userAnswer - 1].translate.equals(
-                    mysteryWordAnswer,
-                    ignoreCase = true
-                )
-            ) {
-                println("Верно!")
-                val wordToUpdate = dictionary.find { it.translate == mysteryWordAnswer }
-                wordToUpdate?.let { it.correctAnswersCount++ }
-            } else if (userAnswer == 0) break
-            else println("Неверно")
         }
+
+        val mysteryWord: Word = variantsAnswer.random()
+
+        println("Как переводиться ${mysteryWord.original}? Введите номер")
+        variantsAnswer.forEachIndexed { index, word -> println("${index + 1}. ${word.translate}") }
+        println("0. Выход в меню")
+
+        val indexOfMysteryWord: Int =
+            variantsAnswer.indexOfFirst { it.original.equals(mysteryWord.original, ignoreCase = true) }
+
+        val userAnswer = readln().toInt()
+        if (userAnswer in 1..4 && indexOfMysteryWord != -1 && userAnswer - 1 == indexOfMysteryWord) {
+            println("Верно!")
+            val wordToUpdate = dictionary.find { it.translate == mysteryWord.translate }
+            wordToUpdate?.let { it.correctAnswersCount++ }
+        } else if (userAnswer == 0) break
+        else println("Неверно")
     }
 }
 
@@ -84,3 +79,5 @@ data class Word(
 const val START_MESSAGE = "Меню:\n1 - Учить слова\n2 - Статистика\n0 - Выход"
 const val WARNING_MESSAGE = "Для выбора пункта из меню, введите цифру"
 const val LEARNED_ALL_WORDS = "Вы выучили все слова"
+const val NUMBER_OF_ANSWER_OPTIONS = 4
+const val FILTER_CORRECT_ANSWERS = 3
