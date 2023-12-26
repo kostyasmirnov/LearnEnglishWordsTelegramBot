@@ -1,5 +1,8 @@
 hello|привет|3
 dog|собака|3
-cat|кошка|1
+cat|кошка|2
 thank you|спасибо|2
-properties|характеристики|1
+properties|характеристики|2
+triggered|срабатывает|2
+they|они|1
+listen to|слушать|2
