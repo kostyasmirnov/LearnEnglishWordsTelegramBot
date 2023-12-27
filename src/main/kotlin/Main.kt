@@ -65,8 +65,18 @@ fun learnWords(dictionary: List<Word>) {
             println("Верно!")
             val wordToUpdate = dictionary.find { it.translate == mysteryWord.translate }
             wordToUpdate?.let { it.correctAnswersCount++ }
+            saveDictionary(dictionary)
         } else if (userAnswer == 0) break
         else println("Неверно")
+    }
+}
+
+fun saveDictionary(dictionary: List<Word>) {
+    val fileWithWords = File("words.txt")
+    fileWithWords.writeText("")
+    dictionary.forEach {
+        val word = Word(original = it.original, translate = it.translate, correctAnswersCount = it.correctAnswersCount)
+        fileWithWords.appendText("${word.original}|${word.translate}|${word.correctAnswersCount}\n")
     }
 }
 
