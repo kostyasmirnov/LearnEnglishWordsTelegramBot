@@ -75,12 +75,11 @@ class LearnWordsTrainer(
     }
 
     private fun saveDictionary(dictionary: List<Word>) {
-        val fileWithWords = File("words.txt")
-        fileWithWords.writeText("")
+        wordsFile.writeText("")
         dictionary.forEach {
             val word =
                 Word(original = it.original, translate = it.translate, correctAnswersCount = it.correctAnswersCount)
-            fileWithWords.appendText("${word.original}|${word.translate}|${word.correctAnswersCount}\n")
+            wordsFile.appendText("${word.original}|${word.translate}|${word.correctAnswersCount}\n")
         }
     }
 
