@@ -1,35 +1,35 @@
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
+const val stage8_text = "Hello"
 
 fun main(args: Array<String>) {
 
-    val botToken = args[0]
-    var updateId = 0
+    val botToken: String = args[0]
 
+    val tbs = TelegramBotService(botToken = botToken)
+    var updateId: Int = 0
+    var text: String = ""
+    var chatId: Int = 0
+
+    val updateIdRegex: Regex = "\"update_id\":(.+?),".toRegex()
+    val messageTextRegex: Regex = "\"text\":\"(.+?)\"".toRegex()
+    val messageChatIdRegex: Regex = "\"chat\":\\{\"id\":(.+?),".toRegex()
 
     while (true) {
         Thread.sleep(2000)
-        val updates: String = getUpdates(botToken, updateId)
-        println(updates)
+        tbs.updates = tbs.getUpdates(updateId)
+        println(tbs.updates)
 
-        val startUpdateId = updates.lastIndexOf("update_id")
-        val endUpdateId = updates.lastIndexOf(",\n\"message\"")
+        val matchResultUpdateId = updateIdRegex.find(tbs.updates) ?: continue
+        val matchResultText = messageTextRegex.find(tbs.updates)
+        val matchResultChatId = messageChatIdRegex.find(tbs.updates) ?: continue
 
-        if (startUpdateId == -1 || endUpdateId == -1) continue
-        val updateIdString = updates.substring(startUpdateId + 11, endUpdateId)
+        updateId = matchResultUpdateId.groupValues[1].toInt() + 1
 
-        updateId = updateIdString.toInt() + 1
+        chatId = matchResultChatId.groupValues[1].toInt()
+
+        tbs.sendMessage(chatId, stage8_text)
+
     }
 }
 
-fun getUpdates(botToken: String, updateId: Int): String {
-    val urlUpdate = "https://api.telegram.org/bot$botToken/getUpdates?offset=$updateId"
 
-    val client: HttpClient = HttpClient.newBuilder().build()
-    val request = HttpRequest.newBuilder().uri(URI.create(urlUpdate)).build()
-    val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
 
-    return response.body()
-}
