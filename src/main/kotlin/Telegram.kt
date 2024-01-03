@@ -4,7 +4,7 @@ fun main(args: Array<String>) {
 
     val botToken: String = args[0]
 
-    val tbs = TelegramBotService(botToken=botToken)
+    val tbs = TelegramBotService(botToken = botToken)
     var updateId: Int = 0
     var text: String = ""
     var chatId: Int = 0
@@ -22,19 +22,11 @@ fun main(args: Array<String>) {
         val matchResultText = messageTextRegex.find(tbs.updates)
         val matchResultChatId = messageChatIdRegex.find(tbs.updates) ?: continue
 
-        if (matchResultUpdateId != null) {
-            updateId = matchResultUpdateId.groupValues[1].toInt() + 1
-            println(updateId)
-        }
-        if (matchResultChatId != null) {
-            chatId = matchResultChatId.groupValues[1].toInt()
-            println(chatId)
-        }
+        updateId = matchResultUpdateId.groupValues[1].toInt() + 1
 
-        if (matchResultText != null && matchResultText.groupValues[1] == stage8_text) {
-            println(chatId)
-            tbs.sendMessage(chatId, stage8_text)
-        }
+        chatId = matchResultChatId.groupValues[1].toInt()
+
+        tbs.sendMessage(chatId, stage8_text)
 
     }
 }
