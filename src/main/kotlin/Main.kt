@@ -55,12 +55,6 @@ fun main() {
 
 }
 
-data class Word(
-    val original: String,
-    var translate: String,
-    var correctAnswersCount: Int = 0,
-)
-
 const val START_MESSAGE = "Меню:\n1 - Учить слова\n2 - Статистика\n0 - Выход"
 const val WARNING_MESSAGE = "Для выбора пункта из меню, введите цифру"
 const val LEARNED_ALL_WORDS = "Вы выучили все слова"
