@@ -36,7 +36,7 @@ fun main(args: Array<String>) {
             tbs.checkNextQuestionAndSend(trainer, chatId)
         }
 
-        if (data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX)!!) {
+        if (data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
             val userAnswerIndex = data.substringAfter(CALLBACK_DATA_ANSWER_PREFIX).toInt()
             val result = trainer.checkAnswer(userAnswerIndex)
             if (result) tbs.sendMessage(chatId, CORRECT)
@@ -45,7 +45,6 @@ fun main(args: Array<String>) {
                 "$NOT_CORRECT. ${trainer.question?.correctAnswer?.original} - ${trainer.question?.correctAnswer?.translate}"
             )
         }
-
         tbs.checkNextQuestionAndSend(trainer, chatId)
 
         if (text.lowercase() == "/start" && chatId != null) {
