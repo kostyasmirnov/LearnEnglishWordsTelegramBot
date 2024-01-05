@@ -120,7 +120,7 @@ class TelegramBotService(
         val trainer = trainers.getOrPut(chatId) { LearnWordsTrainer("$chatId.txt") }
 
         when {
-            message?.lowercase() == "/start" -> {
+            message?.lowercase() == "/start" || data == MENU_CLICK-> {
                 sendMenu(json, chatId)
             }
 
@@ -153,9 +153,6 @@ class TelegramBotService(
                 trainer.resetProgress()
                 sendMessage(json, chatId, "Прогресс сброшен")
                 Thread.sleep(1000)
-                sendMenu(json, chatId)
-            }
-            data == MENU_CLICK -> {
                 sendMenu(json, chatId)
             }
         }
