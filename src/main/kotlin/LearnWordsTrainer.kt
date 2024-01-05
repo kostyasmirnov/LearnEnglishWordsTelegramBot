@@ -6,6 +6,12 @@ data class Statistics(
     val percentLearned: Int,
 )
 
+data class Word(
+    val original: String,
+    var translate: String,
+    var correctAnswersCount: Int = 0,
+)
+
 data class Question(
     val variants: List<Word>,
     val correctAnswer: Word,
@@ -16,7 +22,7 @@ class LearnWordsTrainer(
     private val countOfQuestionWords: Int = 4,
 ) {
 
-    private var question: Question? = null
+    var question: Question? = null
     val wordsFile: File = File("words.txt")
     val dictionary = loadDictionaryFromFile(wordsFile)
 
