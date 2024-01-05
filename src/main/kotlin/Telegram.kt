@@ -1,63 +1,91 @@
-const val stage8_text = "Hello"
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
+@Serializable
+data class Update(
+    @SerialName("update_id")
+    val updateId: Long,
+    @SerialName("message")
+    val message: Message? = null,
+    @SerialName("callback_query")
+    val callbackQuery: CallbackQuery? = null,
+)
+
+@Serializable
+data class Response(
+    @SerialName("result")
+    val result: List<Update>,
+)
+
+@Serializable
+data class Message(
+    @SerialName("text")
+    val text: String,
+    @SerialName("chat")
+    val chat: Chat,
+)
+
+@Serializable
+data class CallbackQuery(
+    @SerialName("data")
+    val data: String,
+    @SerialName("message")
+    val message: Message? = null,
+)
+
+@Serializable
+data class Chat(
+    @SerialName("id")
+    val id: Long,
+)
+
+@Serializable
+data class SendMessageRequest(
+    @SerialName("chat_id")
+    val chatId: Long,
+    @SerialName("text")
+    val text: String,
+    @SerialName("reply_markup")
+    val replyMarkup: ReplyMarkup? = null,
+)
+
+@Serializable
+data class ReplyMarkup(
+    @SerialName("inline_keyboard")
+    val inlineKeyboard: List<List<InlineKeyboard>>,
+)
+
+@Serializable
+data class InlineKeyboard(
+    @SerialName("callback_data")
+    val callbackData: String,
+    @SerialName("text")
+    val text: String,
+)
+
 
 fun main(args: Array<String>) {
 
     val botToken: String = args[0]
-
     val tbs = TelegramBotService(botToken = botToken)
     val trainer = LearnWordsTrainer()
+    var lastUpdateId: Long = 0L
 
-    var updateId: Int = 0
-    var text: String = ""
-    var chatId: Int = 0
 
-    val updateIdRegex: Regex = "\"update_id\":(.+?),".toRegex()
-    val messageTextRegex: Regex = "\"text\":\"(.+?)\"".toRegex()
-    val messageChatIdRegex: Regex = "\"chat\":\\{\"id\":(.+?),".toRegex()
-    val dataRegex: Regex = "\"data\":\"(.*?)\"".toRegex()
+    val json = Json {
+        ignoreUnknownKeys = true
+    }
 
     while (true) {
         Thread.sleep(2000)
-        tbs.updates = tbs.getUpdates(updateId)
-        println(tbs.updates)
+        val responseString: String = tbs.getUpdates(lastUpdateId)
+        println(responseString)
 
-        val matchResultUpdateId = updateIdRegex.find(tbs.updates) ?: continue
-        val matchResultText = messageTextRegex.find(tbs.updates)?.groups?.get(1)?.value
-        val matchResultChatId = messageChatIdRegex.find(tbs.updates) ?: continue
-        val data = dataRegex.find(tbs.updates)?.groups?.get(1)?.value
-
-        updateId = matchResultUpdateId.groupValues[1].toInt() + 1
-
-        chatId = matchResultChatId.groupValues[1].toInt()
-
-        text = matchResultText.toString()
-
-        if (data == LEARN_WORDS_CLICK && chatId != null) {
-            tbs.checkNextQuestionAndSend(trainer, chatId)
-        }
-
-        if (data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
-            val userAnswerIndex = data.substringAfter(CALLBACK_DATA_ANSWER_PREFIX).toInt()
-            val result = trainer.checkAnswer(userAnswerIndex)
-            if (result) tbs.sendMessage(chatId, CORRECT)
-            else tbs.sendMessage(
-                chatId,
-                "$NOT_CORRECT. ${trainer.question?.correctAnswer?.original} - ${trainer.question?.correctAnswer?.translate}"
-            )
-        }
-        tbs.checkNextQuestionAndSend(trainer, chatId)
-
-        if (text.lowercase() == "/start" && chatId != null) {
-            tbs.sendMenu(chatId)
-        }
-
-        if (data?.lowercase() == STATS_CLICK && chatId != null) {
-            val statistics = trainer.getStatistics()
-            val statisticsString =
-                "Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percentLearned}%"
-            tbs.sendMessage(chatId, statisticsString)
-        }
-
-
+        val response: Response = json.decodeFromString(responseString)
+        if (response.result.isEmpty()) continue
+        val sortedUpdates = response.result.sortedBy { it.updateId }
+        sortedUpdates.forEach { tbs.handleUpdate(it, json, tbs.trainers) }
+        lastUpdateId = sortedUpdates.last().updateId + 1
     }
 }

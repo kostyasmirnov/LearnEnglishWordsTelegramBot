@@ -1,8 +1,8 @@
-hello|привет|3
-dog|собака|3
-cat|кошка|1
-thank you|спасибо|3
-properties|характеристики|2
-triggered|срабатывает|2
-they|они|3
-listen to|слушать|3
+hello|привет|0
+dog|собака|0
+cat|кошка|0
+thank you|спасибо|0
+properties|характеристики|0
+triggered|срабатывает|0
+they|они|0
+listen to|слушать|0

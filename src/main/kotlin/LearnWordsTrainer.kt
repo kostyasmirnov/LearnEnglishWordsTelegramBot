@@ -1,3 +1,5 @@
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import java.io.File
 
 data class Statistics(
@@ -6,6 +8,7 @@ data class Statistics(
     val percentLearned: Int,
 )
 
+@Serializable
 data class Word(
     val original: String,
     var translate: String,
@@ -18,13 +21,14 @@ data class Question(
 )
 
 class LearnWordsTrainer(
+    private val fileName: String = "words.txt",
     private val learnedAnswerCount: Int = 3,
     private val countOfQuestionWords: Int = 4,
 ) {
 
     var question: Question? = null
-    val wordsFile: File = File("words.txt")
-    val dictionary = loadDictionaryFromFile(wordsFile)
+    private val wordsFile: File = File("words.txt")
+    private val dictionary = loadDictionaryFromFile(wordsFile)
 
     fun getStatistics(): Statistics {
         val learned = dictionary.filter { it.correctAnswersCount >= learnedAnswerCount }.size
@@ -56,7 +60,7 @@ class LearnWordsTrainer(
             val correctAnswerId = it.variants.indexOf(it.correctAnswer)
             if (correctAnswerId == userAnswerIndex) {
                 it.correctAnswer.correctAnswersCount++
-                saveDictionary(dictionary)
+                saveDictionary()
                 true
             } else {
                 false
@@ -66,13 +70,14 @@ class LearnWordsTrainer(
 
     private fun loadDictionaryFromFile(file: File): MutableList<Word> {
         try {
+            val wordsFile = File(fileName)
+            if (!wordsFile.exists()) {
+                File("words.txt").copyTo(wordsFile)
+            }
             val dictionary = mutableListOf<Word>()
-            val lines: List<String> = file.readLines()
-            for (line in lines) {
-                val lineParts = line.split("|")
-                val word =
-                    Word(original = lineParts[0], translate = lineParts[1], correctAnswersCount = lineParts[2].toInt())
-                dictionary.add(word)
+            wordsFile.readLines().forEach {
+                val splitLine = it.split("|")
+                dictionary.add(Word(splitLine[0], splitLine[1], splitLine[2].toIntOrNull() ?: 0))
             }
             return dictionary
         } catch (e: IndexOutOfBoundsException) {
@@ -80,13 +85,18 @@ class LearnWordsTrainer(
         }
     }
 
-    private fun saveDictionary(dictionary: List<Word>) {
+    private fun saveDictionary() {
+        val wordsFile = File(fileName)
         wordsFile.writeText("")
-        dictionary.forEach {
-            val word =
-                Word(original = it.original, translate = it.translate, correctAnswersCount = it.correctAnswersCount)
+        for (word in dictionary) {
             wordsFile.appendText("${word.original}|${word.translate}|${word.correctAnswersCount}\n")
         }
     }
+
+    fun resetProgress() {
+        dictionary.forEach { it.correctAnswersCount = 0 }
+        saveDictionary()
+    }
+
 
 }
