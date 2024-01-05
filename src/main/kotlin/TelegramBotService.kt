@@ -155,6 +155,9 @@ class TelegramBotService(
                 Thread.sleep(1000)
                 sendMenu(json, chatId)
             }
+            data == MENU_CLICK -> {
+                sendMenu(json, chatId)
+            }
         }
     }
 
