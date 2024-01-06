@@ -1,5 +1,4 @@
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.io.File
 
 data class Statistics(
@@ -97,6 +96,5 @@ class LearnWordsTrainer(
         dictionary.forEach { it.correctAnswersCount = 0 }
         saveDictionary()
     }
-
 
 }

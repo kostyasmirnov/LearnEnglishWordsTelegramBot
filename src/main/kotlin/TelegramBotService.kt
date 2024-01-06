@@ -6,16 +6,11 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
 class TelegramBotService(
-    var updates: String = "",
     private val botToken: String,
 ) {
 
-    val trainers = HashMap<Long, LearnWordsTrainer>()
-    private val trainer = try {
-        LearnWordsTrainer(learnedAnswerCount = 3, countOfQuestionWords = 4)
-
-    } catch (e: Exception) {
-        println("Невозможно загрузить словарь")
+    val json = Json {
+        ignoreUnknownKeys = true
     }
     private val urlSendMessage = "$URL_TG$botToken/sendMessage"
 
@@ -30,7 +25,7 @@ class TelegramBotService(
         return response.body()
     }
 
-    fun sendMessage(json: Json, chatId: Long, message: String): String {
+    private fun sendMessage(json: Json, chatId: Long, message: String): String {
         val urlSendMessage = "$URL_TG$botToken/sendMessage"
         val requestBody = SendMessageRequest(
             chatId = chatId,
@@ -120,7 +115,7 @@ class TelegramBotService(
         val trainer = trainers.getOrPut(chatId) { LearnWordsTrainer("$chatId.txt") }
 
         when {
-            message?.lowercase() == "/start" || data == MENU_CLICK-> {
+            message?.lowercase() == "/start" || data == MENU_CLICK -> {
                 sendMenu(json, chatId)
             }
 
