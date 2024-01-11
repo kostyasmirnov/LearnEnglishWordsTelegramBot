@@ -2,6 +2,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.net.ConnectException
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -80,91 +81,116 @@ class TelegramBotService(
     private val client: HttpClient = HttpClient.newBuilder().build()
 
 
-    fun getUpdates(updateId: Long): String {
-        val urlUpdate = "$URL_TG$botToken/getUpdates?offset=$updateId"
+    fun getUpdates(updateId: Long): Response? {
+        try {
+            val urlUpdate = "$URL_TG$botToken/getUpdates?offset=$updateId"
 
-        val request = HttpRequest.newBuilder().uri(URI.create(urlUpdate)).build()
-        val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
-
-        return response.body()
-    }
-
-    fun sendMessage(chatId: Long, message: String): String {
-        val urlSendMessage = "$URL_TG$botToken/sendMessage"
-        val requestBody = SendMessageRequest(
-            chatId = chatId,
-            text = message,
-        )
-        val requestBodyString = json.encodeToString(requestBody)
-
-        val request = HttpRequest.newBuilder().uri(URI.create(urlSendMessage))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
-            .build()
-
-        val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
-        return response.body()
-    }
-
-    fun sendMenu(chatId: Long): String {
-        val requestBody = SendMessageRequest(
-            chatId = chatId,
-            text = "Основное меню",
-            replyMarkup = ReplyMarkup(
-                listOf(
-                    listOf(
-                        InlineKeyboard(text = "Изучить слова", callbackData = LEARN_WORDS_CLICK),
-                        InlineKeyboard(text = "Статистика", callbackData = STATS_CLICK),
-                    ),
-                    listOf(InlineKeyboard(text = "Сбросить прогресс", callbackData = RESET_CLICK))
-                )
-            )
-        )
-        val requestBodyString = json.encodeToString(requestBody)
-
-        val request = HttpRequest.newBuilder().uri(URI.create(urlSendMessage))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
-            .build()
-
-        val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
-        return response.body()
-    }
-
-    private fun sendQuestion(chatId: Long, question: Question?): String {
-        val questionVariants = question?.variants!!.mapIndexed { index, word ->
-            listOf(
-                InlineKeyboard(
-                    text = word.translate, callbackData = "$CALLBACK_DATA_ANSWER_PREFIX$index"
-                )
-            )
+            val request = HttpRequest.newBuilder().uri(URI.create(urlUpdate)).build()
+            val responseText: HttpResponse<String>? =
+                runCatching { client.send(request, HttpResponse.BodyHandlers.ofString()) }.getOrNull()
+            val response: Response? = responseText?.body()?.let { json.decodeFromString(it) }
+            return response
+        } catch (e: ConnectException) {
+            e.printStackTrace()
         }
-        val requestBody = SendMessageRequest(
-            chatId = chatId,
-            text = question.correctAnswer.original,
-            replyMarkup = ReplyMarkup(
-                inlineKeyboard = questionVariants + listOf(
-                    listOf(InlineKeyboard(text = "Выйти в основное меню", callbackData = MENU_CLICK))
+        return null
+    }
+
+    fun sendMessage(chatId: Long, message: String): String? {
+        try {
+            val urlSendMessage = "$URL_TG$botToken/sendMessage"
+            val requestBody = SendMessageRequest(
+                chatId = chatId,
+                text = message,
+            )
+            val requestBodyString = json.encodeToString(requestBody)
+
+            val request = HttpRequest.newBuilder().uri(URI.create(urlSendMessage))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
+                .build()
+
+            val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
+            return response.body()
+        } catch (e: ConnectException) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    fun sendMenu(chatId: Long): String? {
+        try {
+            val requestBody = SendMessageRequest(
+                chatId = chatId,
+                text = "Основное меню",
+                replyMarkup = ReplyMarkup(
+                    listOf(
+                        listOf(
+                            InlineKeyboard(text = "Изучить слова", callbackData = LEARN_WORDS_CLICK),
+                            InlineKeyboard(text = "Статистика", callbackData = STATS_CLICK),
+                        ),
+                        listOf(InlineKeyboard(text = "Сбросить прогресс", callbackData = RESET_CLICK))
+                    )
                 )
             )
-        )
-        val requestBodyString = json.encodeToString(requestBody)
+            val requestBodyString = json.encodeToString(requestBody)
 
-        val request = HttpRequest.newBuilder().uri(URI.create(urlSendMessage))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
-            .build()
+            val request = HttpRequest.newBuilder().uri(URI.create(urlSendMessage))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
+                .build()
 
-        val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
-        return response.body()
+            val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
+            return response.body()
+        } catch (e: ConnectException) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    private fun sendQuestion(chatId: Long, question: Question?): String? {
+        try {
+            val questionVariants = question?.variants!!.mapIndexed { index, word ->
+                listOf(
+                    InlineKeyboard(
+                        text = word.translate, callbackData = "$CALLBACK_DATA_ANSWER_PREFIX$index"
+                    )
+                )
+            }
+            val requestBody = SendMessageRequest(
+                chatId = chatId,
+                text = question.correctAnswer.original,
+                replyMarkup = ReplyMarkup(
+                    inlineKeyboard = questionVariants + listOf(
+                        listOf(InlineKeyboard(text = "Выйти в основное меню", callbackData = MENU_CLICK))
+                    )
+                )
+            )
+            val requestBodyString = json.encodeToString(requestBody)
+
+            val request = HttpRequest.newBuilder().uri(URI.create(urlSendMessage))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBodyString))
+                .build()
+
+            val response: HttpResponse<String> = client.send(request, HttpResponse.BodyHandlers.ofString())
+            return response.body()
+        } catch (e: ConnectException) {
+            e.printStackTrace()
+        }
+        return null
     }
 
     fun checkNextQuestionAndSend(trainer: LearnWordsTrainer, chatId: Long) {
-        val question = trainer.getNextQuestion()
-        if (question == null) {
-            sendMessage(chatId, LEARNED_ALL_WORDS)
-        } else {
-            sendQuestion(chatId, question)
+        try {
+            val question = trainer.getNextQuestion()
+            if (question == null) {
+                sendMessage(chatId, LEARNED_ALL_WORDS)
+            } else {
+                sendQuestion(chatId, question)
+            }
+        } catch (e: ConnectException) {
+            e.printStackTrace()
         }
     }
 
