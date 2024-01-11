@@ -1,63 +1,69 @@
-const val stage8_text = "Hello"
+import java.net.ConnectException
 
 fun main(args: Array<String>) {
 
     val botToken: String = args[0]
-
     val tbs = TelegramBotService(botToken = botToken)
-    val trainer = LearnWordsTrainer()
+    var lastUpdateId: Long? = 0L
+    val trainers = HashMap<Long, LearnWordsTrainer>()
 
-    var updateId: Int = 0
-    var text: String = ""
-    var chatId: Int = 0
+    fun handleUpdate(update: Update, trainers: HashMap<Long, LearnWordsTrainer>) {
+        try {
+            val message = update.message?.text
+            val chatId: Long = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id ?: return
+            val data = update.callbackQuery?.data
 
-    val updateIdRegex: Regex = "\"update_id\":(.+?),".toRegex()
-    val messageTextRegex: Regex = "\"text\":\"(.+?)\"".toRegex()
-    val messageChatIdRegex: Regex = "\"chat\":\\{\"id\":(.+?),".toRegex()
-    val dataRegex: Regex = "\"data\":\"(.*?)\"".toRegex()
+            val trainer = trainers.getOrPut(chatId) { LearnWordsTrainer("$chatId.txt") }
+
+            when {
+                message?.lowercase() == "/start" || data == MENU_CLICK -> {
+                    tbs.sendMenu(chatId)
+                }
+
+                data == LEARN_WORDS_CLICK -> {
+                    tbs.checkNextQuestionAndSend(trainer, chatId)
+                }
+
+                data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true -> {
+                    val userAnswerIndex = data.substringAfter(CALLBACK_DATA_ANSWER_PREFIX).toInt()
+                    val result = trainer.checkAnswer(userAnswerIndex)
+                    if (result) tbs.sendMessage(chatId, CORRECT)
+                    else tbs.sendMessage(
+                        chatId,
+                        "$NOT_CORRECT. ${trainer.question?.correctAnswer?.original} - ${trainer.question?.correctAnswer?.translate}"
+                    )
+                    tbs.checkNextQuestionAndSend(trainer, chatId)
+                }
+
+                data == STATS_CLICK -> {
+                    val statistics = trainer.getStatistics()
+                    val statisticsString =
+                        "Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percentLearned}%"
+                    tbs.sendMessage(chatId, statisticsString)
+                    Thread.sleep(1000)
+                    tbs.sendMenu(chatId)
+                }
+
+                data == RESET_CLICK -> {
+                    trainer.resetProgress()
+                    tbs.sendMessage(chatId, "Прогресс сброшен")
+                    Thread.sleep(1000)
+                    tbs.sendMenu(chatId)
+                }
+            }
+        } catch (e: ConnectException) {
+            e.printStackTrace()
+        }
+    }
 
     while (true) {
         Thread.sleep(2000)
-        tbs.updates = tbs.getUpdates(updateId)
-        println(tbs.updates)
+        val response: Response? = lastUpdateId?.let { tbs.getUpdates(it) }
+        if (response?.result?.isEmpty() == true) continue
+        println(response)
 
-        val matchResultUpdateId = updateIdRegex.find(tbs.updates) ?: continue
-        val matchResultText = messageTextRegex.find(tbs.updates)?.groups?.get(1)?.value
-        val matchResultChatId = messageChatIdRegex.find(tbs.updates) ?: continue
-        val data = dataRegex.find(tbs.updates)?.groups?.get(1)?.value
-
-        updateId = matchResultUpdateId.groupValues[1].toInt() + 1
-
-        chatId = matchResultChatId.groupValues[1].toInt()
-
-        text = matchResultText.toString()
-
-        if (data == LEARN_WORDS_CLICK && chatId != null) {
-            tbs.checkNextQuestionAndSend(trainer, chatId)
-        }
-
-        if (data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true) {
-            val userAnswerIndex = data.substringAfter(CALLBACK_DATA_ANSWER_PREFIX).toInt()
-            val result = trainer.checkAnswer(userAnswerIndex)
-            if (result) tbs.sendMessage(chatId, CORRECT)
-            else tbs.sendMessage(
-                chatId,
-                "$NOT_CORRECT. ${trainer.question?.correctAnswer?.original} - ${trainer.question?.correctAnswer?.translate}"
-            )
-        }
-        tbs.checkNextQuestionAndSend(trainer, chatId)
-
-        if (text.lowercase() == "/start" && chatId != null) {
-            tbs.sendMenu(chatId)
-        }
-
-        if (data?.lowercase() == STATS_CLICK && chatId != null) {
-            val statistics = trainer.getStatistics()
-            val statisticsString =
-                "Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percentLearned}%"
-            tbs.sendMessage(chatId, statisticsString)
-        }
-
-
+        val sortedUpdates = response?.result?.sortedBy { it.updateId }
+        sortedUpdates?.forEach { handleUpdate(it, trainers) }
+        lastUpdateId = sortedUpdates?.last()?.updateId?.plus(1)
     }
 }
