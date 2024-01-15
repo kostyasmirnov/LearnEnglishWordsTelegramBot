@@ -6,6 +6,10 @@ fun main(args: Array<String>) {
     val tbs = TelegramBotService(botToken = botToken)
     var lastUpdateId: Long? = 0L
     val trainers = HashMap<Long, LearnWordsTrainer>()
+   // tbs.updateDictionary(tbs.wordsFile)
+    val fud = FileUserDictionary()
+    //fud.updateDictionary(tbs.wordsFile)
+
 
     fun handleUpdate(update: Update, trainers: HashMap<Long, LearnWordsTrainer>) {
         try {
@@ -16,36 +20,35 @@ fun main(args: Array<String>) {
             val trainer = trainers.getOrPut(chatId) { LearnWordsTrainer("$chatId.txt") }
 
             when {
-                message?.lowercase() == "/start" || data == MENU_CLICK -> {
+                message?.lowercase() == "/start" || data == MENU_CLICK -> { // done
                     tbs.sendMenu(chatId)
+                    tbs.getAndSaveUserData(chatId)
                 }
 
-                data == LEARN_WORDS_CLICK -> {
-                    tbs.checkNextQuestionAndSend(trainer, chatId)
+                data == LEARN_WORDS_CLICK -> { // done
+                    tbs.checkNextQuestionAndSend(chatId)
                 }
 
                 data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true -> {
                     val userAnswerIndex = data.substringAfter(CALLBACK_DATA_ANSWER_PREFIX).toInt()
-                    val result = trainer.checkAnswer(userAnswerIndex)
+                    val result = trainer.checkAnswer(userAnswerIndex) // refactoring
                     if (result) tbs.sendMessage(chatId, CORRECT)
                     else tbs.sendMessage(
                         chatId,
-                        "$NOT_CORRECT. ${trainer.question?.correctAnswer?.original} - ${trainer.question?.correctAnswer?.translate}"
+                        "$NOT_CORRECT. ${trainer.question?.correctAnswer?.original} - ${trainer.question?.correctAnswer?.translate}" // need refactoring
                     )
-                    tbs.checkNextQuestionAndSend(trainer, chatId)
+                    tbs.checkNextQuestionAndSend(chatId) // done
                 }
 
                 data == STATS_CLICK -> {
-                    val statistics = trainer.getStatistics()
-                    val statisticsString =
-                        "Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percentLearned}%"
-                    tbs.sendMessage(chatId, statisticsString)
+                    val statistics = tbs.getStatistics(chatId) // done
+                    tbs.sendMessage(chatId, statistics)
                     Thread.sleep(1000)
                     tbs.sendMenu(chatId)
                 }
 
-                data == RESET_CLICK -> {
-                    trainer.resetProgress()
+                data == RESET_CLICK -> { //done
+                    fud.resetUserProgress(chatId)
                     tbs.sendMessage(chatId, "Прогресс сброшен")
                     Thread.sleep(1000)
                     tbs.sendMenu(chatId)
