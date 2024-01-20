@@ -1,23 +1,20 @@
 import java.sql.DriverManager
 
-object Database {
-
-    @JvmStatic
-    fun main(args: Array<String>) {
-        DriverManager.getConnection("jdbc:sqlite:data.db")
-            .use { connection ->
-                val statement = connection.createStatement()
-                statement.executeUpdate(
-                    """
+fun main() {
+    DriverManager.getConnection("jdbc:sqlite:data.db")
+        .use { connection ->
+            val statement = connection.createStatement()
+            statement.executeUpdate(
+                """
                       CREATE TABLE IF NOT EXISTS "words" (
                           "id" integer PRIMARY KEY,
                           "text" varchar,
                           "translate" varchar
                       );
               """.trimIndent()
-                )
-                statement.executeUpdate(
-                    """
+            )
+            statement.executeUpdate(
+                """
                         CREATE TABLE IF NOT EXISTS "user_answers" (
                         "user_id" integer,
   "word_id" integer,
@@ -25,9 +22,9 @@ object Database {
   "updated_at" timestamp
   );
                     """.trimIndent()
-                )
-                statement.executeUpdate(
-                    """
+            )
+            statement.executeUpdate(
+                """
                         CREATE TABLE IF NOT EXISTS "users" (
                         "id" integer PRIMARY KEY,
   "username" varchar,
@@ -35,8 +32,7 @@ object Database {
   "chat_id" integer
   );
                     """.trimIndent()
-                )
-                statement.executeUpdate("insert into words values(0, 'heart', 'сердце')")
-            }
-    }
+            )
+            statement.executeUpdate("insert into words values(0, 'heart', 'сердце')")
+        }
 }

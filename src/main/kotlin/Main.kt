@@ -1,13 +1,18 @@
 fun main() {
 
+    val fileBase = FileUserDictionary()
+    val dataBase = DatabaseUserDictionary()
+    val chatId:Long = 1263632552
+
     val trainer = try {
-        LearnWordsTrainer(learnedAnswerCount = 3, countOfQuestionWords = 4)
+        LearnWordsTrainer(learnedAnswerCount = 3, countOfQuestionWords = 4, chatId = chatId,
+            dictionaryDataBase = dataBase, fileBase = fileBase
+        )
 
     } catch (e: Exception) {
         println("Невозможно загрузить словарь")
         return
     }
-
 
     fun Question.asConsoleString(): String {
         val variants = this.variants
@@ -23,6 +28,7 @@ fun main() {
             1 -> {
                 while (true) {
                     val question = trainer.getNextQuestion()
+                    println(question)
 
                     if (question == null) {
                         println(LEARNED_ALL_WORDS)
@@ -44,8 +50,8 @@ fun main() {
             }
 
             2 -> {
-                val statistics = trainer.getStatistics()
-                println("Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percentLearned}%")
+                //val statistics = trainer.getStatistics()
+                //println("Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percentLearned}%")
             }
 
             0 -> break

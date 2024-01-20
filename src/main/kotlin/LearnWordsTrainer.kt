@@ -1,5 +1,4 @@
 import kotlinx.serialization.Serializable
-import java.io.File
 
 data class Statistics(
     val learned: Int,
@@ -20,27 +19,30 @@ data class Question(
 )
 
 class LearnWordsTrainer(
-    private val fileName: String = "words.txt",
+    private val chatId: Long,
+    private val dictionaryDataBase: DatabaseUserDictionary,
+    private val fileBase: FileUserDictionary,
     private val learnedAnswerCount: Int = 3,
     private val countOfQuestionWords: Int = 4,
-) {
+
+    ) {
 
     var question: Question? = null
-    private val wordsFile: File = File("words.txt")
-    private val dictionary = loadDictionaryFromFile(wordsFile)
+    var lastCurrentAnswer: Question? = null
 
-    fun getStatistics(): Statistics {
-        val learned = dictionary.filter { it.correctAnswersCount >= learnedAnswerCount }.size
-        val total = dictionary.size
+    fun getStatistics(chatId: Long): Statistics {
+        val learned = dictionaryDataBase.getLearnedWords(chatId).size
+        val total = dictionaryDataBase.getSize(chatId)
         val percentLearned = learned * 100 / total
+
         return Statistics(learned, total, percentLearned)
     }
 
     fun getNextQuestion(): Question? {
-        val notLearnedList = dictionary.filter { it.correctAnswersCount < learnedAnswerCount }
+        val notLearnedList = dictionaryDataBase.getUnlearnedWords(chatId).shuffled()
         if (notLearnedList.isEmpty()) return null
         val questionWords = if (notLearnedList.size < countOfQuestionWords) {
-            val learnedList = dictionary.filter { it.correctAnswersCount >= learnedAnswerCount }.shuffled()
+            val learnedList = dictionaryDataBase.getLearnedWords(chatId).shuffled()
             notLearnedList.shuffled()
                 .take(countOfQuestionWords) + learnedList.take(countOfQuestionWords - notLearnedList.size)
         } else {
@@ -51,15 +53,23 @@ class LearnWordsTrainer(
             variants = questionWords,
             correctAnswer = correctAnswer,
         )
+        lastCurrentAnswer = question
         return question
     }
 
     fun checkAnswer(userAnswerIndex: Int?): Boolean {
+        val correctAnswer: Int = 1
         return question?.let {
             val correctAnswerId = it.variants.indexOf(it.correctAnswer)
             if (correctAnswerId == userAnswerIndex) {
                 it.correctAnswer.correctAnswersCount++
-                saveDictionary()
+                fileBase.saveDictionary()
+                val word = lastCurrentAnswer?.correctAnswer?.original
+                dictionaryDataBase.setCorrectAnswersCount(
+                    lastCurrentAnswer?.correctAnswer?.original.toString(),
+                    correctAnswer,
+                    chatId
+                )
                 true
             } else {
                 false
@@ -67,34 +77,9 @@ class LearnWordsTrainer(
         } ?: false
     }
 
-    private fun loadDictionaryFromFile(file: File): MutableList<Word> {
-        try {
-            val wordsFile = File(fileName)
-            if (!wordsFile.exists()) {
-                File("words.txt").copyTo(wordsFile)
-            }
-            val dictionary = mutableListOf<Word>()
-            wordsFile.readLines().forEach {
-                val splitLine = it.split("|")
-                dictionary.add(Word(splitLine[0], splitLine[1], splitLine[2].toIntOrNull() ?: 0))
-            }
-            return dictionary
-        } catch (e: IndexOutOfBoundsException) {
-            throw IllegalStateException("Некорректный файл")
-        }
-    }
-
-    private fun saveDictionary() {
-        val wordsFile = File(fileName)
-        wordsFile.writeText("")
-        for (word in dictionary) {
-            wordsFile.appendText("${word.original}|${word.translate}|${word.correctAnswersCount}\n")
-        }
-    }
-
     fun resetProgress() {
-        dictionary.forEach { it.correctAnswersCount = 0 }
-        saveDictionary()
+        dictionaryDataBase.resetUserProgress(chatId)
+        //saveDictionary()
     }
 
 }
