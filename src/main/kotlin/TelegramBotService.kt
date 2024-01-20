@@ -159,7 +159,7 @@ class TelegramBotService(
             }
             val requestBody = SendMessageRequest(
                 chatId = chatId,
-                text = question.correctAnswer.original,
+                text = HIDDEN_WORD + question.correctAnswer.original + "?",
                 replyMarkup = ReplyMarkup(
                     inlineKeyboard = questionVariants + listOf(
                         listOf(InlineKeyboard(text = "Выйти в основное меню", callbackData = MENU_CLICK))
@@ -186,7 +186,6 @@ class TelegramBotService(
             val question = trainer.getNextQuestion()
             if (question == null) {
                 sendMessage(chatId, "some err")
-                println(question)
             } else {
                 sendQuestion(chatId, question)
             }
@@ -201,6 +200,7 @@ const val URL_TG = "https://api.telegram.org/bot"
 const val STATS_CLICK = "statistics_click"
 const val LEARN_WORDS_CLICK = "learnWords_click"
 const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"
+const val HIDDEN_WORD = "Как перевести "
 const val CORRECT = "Правильно!"
 const val NOT_CORRECT = "Неверно"
 const val RESET_CLICK = "reset_click"
