@@ -28,5 +28,5 @@ kotlin {
 }
 
 application {
-    mainClass.set("MainKt")
+    mainClass.set("Telegram.kt")
 }

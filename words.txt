@@ -1,11 +1,11 @@
-hello|привет|3
-dog|собака|3
-cat|кошка|3
-thank you|спасибо|3
-properties|характеристики|3
-triggered|срабатывает|2
-they|они|3
-listen to|слушать|3
-care|забота|3
-draw|рисовать|3
-polymorphism|полиморфизм|3
+hello|привет|1
+dog|собака|1
+cat|кошка|1
+thank you|спасибо|1
+properties|характеристики|1
+triggered|срабатывает|1
+they|они|1
+listen to|слушать|1
+care|забота|1
+draw|рисовать|1
+polymorphism|полиморфизм|1

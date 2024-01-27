@@ -1,3 +1,10 @@
+package console
+
+import datastore.FileUserDictionary
+import trainer.LearnWordsTrainer
+import trainer.model.Question
+import trainer.model.Word
+
 fun main() {
 
     val chatId: Long = 1263632552
@@ -55,6 +62,11 @@ fun main() {
                 println("Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percentLearned}%")
             }
 
+            3 -> {
+                trainer.resetProgress()
+                println("Прогресс сброшен!")
+            }
+
             0 -> break
             else -> println(WARNING_MESSAGE)
         }
@@ -62,6 +74,6 @@ fun main() {
 
 }
 
-const val START_MESSAGE = "Меню:\n1 - Учить слова\n2 - Статистика\n0 - Выход"
+const val START_MESSAGE = "Меню:\n1 - Учить слова\n2 - Статистика\n3 - Сбросить прогресс\n0 - Выход"
 const val WARNING_MESSAGE = "Для выбора пункта из меню, введите цифру"
 const val LEARNED_ALL_WORDS = "Вы выучили все слова"

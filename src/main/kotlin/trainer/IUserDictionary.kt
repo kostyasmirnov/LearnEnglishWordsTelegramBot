@@ -1,3 +1,7 @@
+package trainer
+
+import trainer.model.Word
+
 interface IUserDictionary {
 
     fun getNumOfLearnedWords(chatId: Long): Int

@@ -1,3 +1,7 @@
+package datastore
+
+import trainer.IUserDictionary
+import trainer.model.Word
 import java.io.File
 import java.sql.DriverManager
 import java.sql.SQLException

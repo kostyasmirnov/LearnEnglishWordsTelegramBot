@@ -1,3 +1,5 @@
+package datastore
+
 import java.sql.DriverManager
 
 fun main() {
@@ -8,7 +10,7 @@ fun main() {
                 """
                       CREATE TABLE IF NOT EXISTS "words" (
                           "id" integer PRIMARY KEY,
-                          "text" varchar,
+                          "text" varchar ,
                           "translate" varchar
                       );
               """.trimIndent()
@@ -33,6 +35,6 @@ fun main() {
   );
                     """.trimIndent()
             )
-            statement.executeUpdate("insert into words values(0, 'heart', 'сердце')")
+            //statement.executeUpdate("insert into words values(0, 'heart', 'сердце')")
         }
 }

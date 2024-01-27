@@ -1,3 +1,7 @@
+package datastore
+
+import trainer.IUserDictionary
+import trainer.model.Word
 import java.io.File
 
 const val DEFAULT_LEARNING_THRESHOLD: Int = 3

@@ -1,29 +1,13 @@
-import kotlinx.serialization.Serializable
+package trainer
 
-data class Statistics(
-    val learned: Int,
-    val total: Int,
-    val percentLearned: Int,
-)
-
-@Serializable
-data class Word(
-    val original: String,
-    var translate: String,
-    var correctAnswersCount: Int = 0,
-)
-
-data class Question(
-    val variants: List<Word>,
-    val correctAnswer: Word,
-)
+import trainer.model.Question
+import trainer.model.Statistics
 
 class LearnWordsTrainer(
     private val chatId: Long,
     private val iUserDictionary: IUserDictionary,
     private val learnedAnswerCount: Int = 3,
     private val countOfQuestionWords: Int = 4,
-
     ) {
 
     var question: Question? = null
@@ -38,10 +22,10 @@ class LearnWordsTrainer(
     }
 
     fun getNextQuestion(): Question? {
-        val notLearnedList = iUserDictionary.getUnlearnedWords(chatId).shuffled()
+        val notLearnedList = iUserDictionary.getUnlearnedWords(chatId, 0).shuffled()
         if (notLearnedList.isEmpty()) return null
         val questionWords = if (notLearnedList.size < countOfQuestionWords) {
-            val learnedList = iUserDictionary.getLearnedWords(chatId).shuffled()
+            val learnedList = iUserDictionary.getLearnedWords(chatId, 0).shuffled()
             notLearnedList.shuffled()
                 .take(countOfQuestionWords) + learnedList.take(countOfQuestionWords - notLearnedList.size)
         } else {

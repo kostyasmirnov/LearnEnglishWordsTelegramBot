@@ -1,7 +1,11 @@
+package bot
+
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import trainer.LearnWordsTrainer
+import trainer.model.Question
 import java.net.ConnectException
 import java.net.URI
 import java.net.http.HttpClient
