@@ -17,7 +17,7 @@ class FileUserDictionary(
         throw IllegalArgumentException("Некорректный файл")
     }
 
-    override fun getNumOfLearnedWords(chatId: Long): Int {
+    override fun getNumOfLearnedWords(chatId: Long, learningThreshold: Int): Int {
         val learnedWordsCount = dictionary.filter { it.correctAnswersCount >= DEFAULT_LEARNING_THRESHOLD }.size
         return learnedWordsCount
     }

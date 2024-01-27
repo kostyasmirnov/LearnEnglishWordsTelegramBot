@@ -11,7 +11,7 @@ class DatabaseUserDictionary : IUserDictionary {
 
     private val connection = DriverManager.getConnection("jdbc:sqlite:data.db")
     private val statement: Statement = connection.createStatement()
-    override fun getNumOfLearnedWords(chatId: Long): Int {
+    override fun getNumOfLearnedWords(chatId: Long, learningThreshold: Int): Int {
         var numOfLearnedWords = 0
 
         try {
@@ -19,6 +19,7 @@ class DatabaseUserDictionary : IUserDictionary {
                 """
                 SELECT COUNT(*) FROM user_answers 
                 WHERE user_id = ${getUserId(chatId)}
+                AND correct_answer_count >= $learningThreshold
             """.trimIndent()
             )
 
