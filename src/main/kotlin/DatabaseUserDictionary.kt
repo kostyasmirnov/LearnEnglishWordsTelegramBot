@@ -5,15 +5,29 @@ import java.sql.Statement
 
 class DatabaseUserDictionary : IUserDictionary {
 
-    private val learningThreshold: Int = DEFAULT_LEARNING_THRESHOLD
     private val connection = DriverManager.getConnection("jdbc:sqlite:data.db")
     private val statement: Statement = connection.createStatement()
-    override fun getNumOfLearnedWords(): Int {
-        TODO("Not yet implemented") //не реализовал, тк не нашел применение функции.
+    override fun getNumOfLearnedWords(chatId: Long): Int {
+        var numOfLearnedWords = 0
+
+        try {
+            val resultSet = statement.executeQuery(
+                """
+                SELECT COUNT(*) FROM user_answers 
+                WHERE user_id = ${getUserId(chatId)}
+            """.trimIndent()
+            )
+
+            if (resultSet.next()) numOfLearnedWords = resultSet.getInt("COUNT(*)")
+        } catch (e: SQLException) {
+            println(e)
+        }
+
+        return numOfLearnedWords
     }
 
     override fun getSize(chatId: Long): Int {
-        var wordCount: Int = 0
+        var wordCount = 0
 
         try {
             val resultSet = statement.executeQuery(
@@ -30,7 +44,7 @@ class DatabaseUserDictionary : IUserDictionary {
         return wordCount
     }
 
-    override fun getLearnedWords(chatId: Long): List<Word> {
+    override fun getLearnedWords(chatId: Long, learningThreshold: Int): List<Word> {
         val learnedWords = mutableListOf<Word>()
 
         try {
@@ -60,7 +74,7 @@ class DatabaseUserDictionary : IUserDictionary {
         return learnedWords
     }
 
-    override fun getUnlearnedWords(chatId: Long): List<Word> {
+    override fun getUnlearnedWords(chatId: Long, learningThreshold: Int): List<Word> {
         val unlearnedWords = mutableListOf<Word>()
 
         try {
@@ -103,7 +117,7 @@ class DatabaseUserDictionary : IUserDictionary {
         return unlearnedWords
     }
 
-    override fun setCorrectAnswersCount(word: String, correctAnswersCount: Int, chatId: Long) {
+    override fun setCorrectAnswersCount(original: String, correctAnswersCount: Int, chatId: Long) {
         var wordId = 0
         val userId = getUserId(chatId)
 
@@ -111,7 +125,7 @@ class DatabaseUserDictionary : IUserDictionary {
             val wordIdResult = statement.executeQuery(
                 """
                 SELECT id FROM words
-                WHERE text = '$word'
+                WHERE text = '$original'
             """.trimIndent()
             )
             if (wordIdResult.next()) wordId = wordIdResult.getInt("id")
@@ -187,12 +201,10 @@ class DatabaseUserDictionary : IUserDictionary {
     }
 
     fun insertNewUser(chatId: Long) {
-        val userId = getUserId(chatId)
         try {
             val resultSet = statement.executeQuery("SELECT COUNT(*) FROM users WHERE chat_id = $chatId")
             resultSet.next()
             val userCount = resultSet.getInt(1)
-
             if (userCount == 0) {
                 statement.executeUpdate(
                     """
@@ -209,16 +221,28 @@ class DatabaseUserDictionary : IUserDictionary {
 
     fun insertNewUserAnswers(chatId: Long) {
         val userId = getUserId(chatId)
+        val allWordsCount: Int
+        var wordsUser: Int
         try {
-            val wordsResult = statement.executeQuery(
+            val allWordsCountResult = statement.executeQuery(
                 """
-            SELECT id FROM words
+            SELECT COUNT(id) FROM words
             """.trimIndent()
             )
+            allWordsCount = allWordsCountResult.getInt("COUNT(id)")
 
-            while (wordsResult.next()) {
-                var wordId = 8
-                while (wordId != 0) {
+            val wordsUserResult = statement.executeQuery(
+                """ 
+                SELECT COUNT(word_id) 
+                FROM user_answers WHERE user_id = $userId
+            """.trimIndent()
+            )
+            wordsUser = wordsUserResult.getInt("COUNT(word_id)")
+
+            if (allWordsCount != wordsUser) {
+                val countNewWordsForUser = allWordsCount - wordsUser
+                var wordId = allWordsCount - countNewWordsForUser
+                while (wordsUser != allWordsCount) {
                     statement.executeUpdate(
                         """
                 INSERT INTO user_answers (correct_answer_count, updated_at, user_id, word_id)
@@ -226,7 +250,8 @@ class DatabaseUserDictionary : IUserDictionary {
                 """.trimIndent()
                     )
                     Thread.sleep(200)
-                    --wordId
+                    ++wordId
+                    ++wordsUser
                 }
             }
         } catch (e: SQLException) {
