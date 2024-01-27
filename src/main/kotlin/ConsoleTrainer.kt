@@ -1,12 +1,13 @@
 fun main() {
 
-    val fileBase = FileUserDictionary()
-    val dataBase = DatabaseUserDictionary()
-    val chatId:Long = 1263632552
+    val chatId: Long = 1263632552
 
     val trainer = try {
-        LearnWordsTrainer(learnedAnswerCount = 3, countOfQuestionWords = 4, chatId = chatId,
-            dictionaryDataBase = dataBase, fileBase = fileBase
+        LearnWordsTrainer(
+            chatId = chatId,
+            iUserDictionary = FileUserDictionary(),
+            learnedAnswerCount = 3,
+            countOfQuestionWords = 4,
         )
 
     } catch (e: Exception) {
@@ -50,8 +51,8 @@ fun main() {
             }
 
             2 -> {
-                //val statistics = trainer.getStatistics()
-                //println("Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percentLearned}%")
+                val statistics = trainer.getStatistics()
+                println("Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percentLearned}%")
             }
 
             0 -> break
