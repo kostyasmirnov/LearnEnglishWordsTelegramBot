@@ -5,8 +5,6 @@ const val DEFAULT_FILE_NAME: String = "words.txt"
 
 class FileUserDictionary(
     private val fileName: String = DEFAULT_FILE_NAME,
-    private val learningThreshold: Int = DEFAULT_LEARNING_THRESHOLD,
-    val wordsFile: File = File("$DEFAULT_FILE_NAME"),
 ) : IUserDictionary {
 
     private val dictionary = try {
@@ -15,20 +13,24 @@ class FileUserDictionary(
         throw IllegalArgumentException("Некорректный файл")
     }
 
-    override fun getNumOfLearnedWords(): Int {
-        TODO("Not yet implemented")
+    override fun getNumOfLearnedWords(chatId: Long): Int {
+        val learnedWordsCount = dictionary.filter { it.correctAnswersCount >= DEFAULT_LEARNING_THRESHOLD }.size
+        return learnedWordsCount
     }
 
     override fun getSize(chatId: Long): Int {
-        TODO("Not yet implemented")
+        val allWordsCount = dictionary.count()
+        return allWordsCount
     }
 
-    override fun getLearnedWords(chatId: Long): List<Word> {
-        TODO("Not yet implemented")
+    override fun getLearnedWords(chatId: Long, learningThreshold: Int): List<Word> {
+        val learnedWords = dictionary.filter { it.correctAnswersCount >= DEFAULT_LEARNING_THRESHOLD }
+        return learnedWords
     }
 
-    override fun getUnlearnedWords(chatId: Long): List<Word> {
-        TODO("Not yet implemented")
+    override fun getUnlearnedWords(chatId: Long, learningThreshold: Int): List<Word> {
+        val unlearnedWords = dictionary.filter { it.correctAnswersCount <= DEFAULT_LEARNING_THRESHOLD }
+        return unlearnedWords
     }
 
 
@@ -59,9 +61,9 @@ class FileUserDictionary(
         }
     }
 
-    fun saveDictionary() {
+    private fun saveDictionary() {
         val file = File(fileName)
-        val newFileContent = dictionary.map { "${it.original}|${it.translate}|${it.correctAnswersCount}" }
+        val newFileContent = dictionary.map { "${it.original}|${it.translate}|${it.correctAnswersCount+1}" }
         file.writeText(newFileContent.joinToString(separator = "\n"))
     }
 }
