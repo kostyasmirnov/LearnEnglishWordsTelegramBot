@@ -176,18 +176,27 @@ class DatabaseUserDictionary : IUserDictionary {
         var userId = 0
 
         try {
-            statement.executeUpdate("""
+            val resultFindUser = statement.executeQuery(
+                """
+                SELECT id FROM users
+                WHERE chat_id = $chatId
+            """.trimIndent()
+            )
+            userId = resultFindUser.getInt("id")
+            if (userId == 0) {
+                statement.executeUpdate(
+                    """
                 INSERT INTO users (chat_id, created_at, username)
                 VALUES ($chatId, CURRENT_TIMESTAMP, 'defaultName')
             """.trimIndent()
-            )
+                )
 
-            statement.generatedKeys.use { generatedKeys -> //получение последнего сгенерированного id
-                if (generatedKeys.next()) {
-                    userId = generatedKeys.getInt(1)
-                } else {
-                    throw SQLException("Creating user failed, no ID obtained.")
-                    println("nice")
+                statement.generatedKeys.use { generatedKeys -> //получение последнего сгенерированного id
+                    if (generatedKeys.next()) {
+                        userId = generatedKeys.getInt(1)
+                    } else {
+                        throw SQLException("Creating user failed, no ID obtained.")
+                    }
                 }
             }
         } catch (e: SQLException) {
