@@ -7,6 +7,7 @@ import trainer.model.Statistics
 class LearnWordsTrainer(
     private val chatId: Long,
     private val iUserDictionary: IUserDictionary,
+    private val learnedAnswerCount: Int = DEFAULT_LEARNING_THRESHOLD,
     private val countOfQuestionWords: Int = 4,
 ) {
 
