@@ -12,7 +12,7 @@ fun main() {
     val trainer = try {
         LearnWordsTrainer(
             chatId = chatId,
-            iUserDictionary = FileUserDictionary(),
+            userDictionary = FileUserDictionary(),
             learnedAnswerCount = 3,
             countOfQuestionWords = 4,
         )

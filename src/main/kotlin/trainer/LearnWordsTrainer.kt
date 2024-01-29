@@ -6,7 +6,7 @@ import trainer.model.Statistics
 
 class LearnWordsTrainer(
     private val chatId: Long,
-    private val iUserDictionary: IUserDictionary,
+    private val userDictionary: IUserDictionary,
     private val learnedAnswerCount: Int = DEFAULT_LEARNING_THRESHOLD,
     private val countOfQuestionWords: Int = 4,
 ) {
@@ -15,18 +15,18 @@ class LearnWordsTrainer(
     private var lastCurrentAnswer: Question? = null
 
     fun getStatistics(): Statistics {
-        val learned = iUserDictionary.getNumOfLearnedWords(chatId, DEFAULT_LEARNING_THRESHOLD)
-        val total = iUserDictionary.getSize(chatId)
+        val learned = userDictionary.getNumOfLearnedWords(chatId, DEFAULT_LEARNING_THRESHOLD)
+        val total = userDictionary.getSize(chatId)
         val percentLearned = learned * 100 / total
 
         return Statistics(learned, total, percentLearned)
     }
 
     fun getNextQuestion(): Question? {
-        val notLearnedList = iUserDictionary.getUnlearnedWords(chatId, DEFAULT_LEARNING_THRESHOLD).shuffled()
+        val notLearnedList = userDictionary.getUnlearnedWords(chatId, DEFAULT_LEARNING_THRESHOLD).shuffled()
         if (notLearnedList.isEmpty()) return null
         val questionWords = if (notLearnedList.size < countOfQuestionWords) {
-            val learnedList = iUserDictionary.getLearnedWords(chatId, DEFAULT_LEARNING_THRESHOLD).shuffled()
+            val learnedList = userDictionary.getLearnedWords(chatId, DEFAULT_LEARNING_THRESHOLD).shuffled()
             notLearnedList.shuffled()
                 .take(countOfQuestionWords) + learnedList.take(countOfQuestionWords - notLearnedList.size)
         } else {
@@ -47,7 +47,7 @@ class LearnWordsTrainer(
             val correctAnswerId = it.variants.indexOf(it.correctAnswer)
             if (correctAnswerId == userAnswerIndex) {
                 it.correctAnswer.correctAnswersCount++
-                iUserDictionary.setCorrectAnswersCount(
+                userDictionary.setCorrectAnswersCount(
                     lastCurrentAnswer?.correctAnswer?.original.toString(),
                     correctAnswer,
                     chatId
@@ -60,7 +60,7 @@ class LearnWordsTrainer(
     }
 
     fun resetProgress() {
-        iUserDictionary.resetUserProgress(chatId)
+        userDictionary.resetUserProgress(chatId)
     }
 
 }

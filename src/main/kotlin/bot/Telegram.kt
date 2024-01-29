@@ -29,7 +29,7 @@ fun main(args: Array<String>) {
                 telegramBotService = telegramBotService,
                 update = update,
                 trainers = trainers,
-                dataBase = dataBase
+                userDictionary = dataBase
             )
         }
         lastUpdateId = sortedUpdates?.last()?.updateId?.plus(1)
@@ -40,17 +40,14 @@ fun handleUpdate(
     telegramBotService: TelegramBotService,
     update: Update,
     trainers: HashMap<Long, LearnWordsTrainer>,
-    dataBase: IUserDictionary,
+    userDictionary: IUserDictionary,
 ) {
-    val database: DatabaseUserDictionary =
-        DatabaseUserDictionary() // для вызова в telegram.kt fun updateDictionary и регистрации пользователя. Временно, пока не понял как иначе
-    val wordsFile: File = File("$DEFAULT_FILE_NAME")
     try {
         val message = update.message?.text
         val chatId: Long = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id ?: return
         val data = update.callbackQuery?.data
 
-        val trainer = trainers.getOrPut(chatId) { LearnWordsTrainer(chatId, dataBase) }
+        val trainer = trainers.getOrPut(chatId) { LearnWordsTrainer(chatId, userDictionary) }
 
         when {
             message?.lowercase() == "/start" || data == MENU_CLICK -> {
@@ -58,9 +55,6 @@ fun handleUpdate(
             }
 
             data == LEARN_WORDS_CLICK -> {
-                database.updateDictionary(wordsFile)
-                database.insertNewUser(chatId)
-                database.insertNewUserAnswers(chatId)
                 telegramBotService.checkNextQuestionAndSend(trainer, chatId)
 
             }
