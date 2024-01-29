@@ -90,11 +90,17 @@ class DatabaseUserDictionary : IUserDictionary {
         try {
             val wordsSQLResult = statement.executeQuery(
                 """
-                SELECT words.text, words.translate, user_answers.correct_answer_count
-                FROM user_answers
-                INNER JOIN words ON user_answers.word_id = words.id
-                WHERE user_answers.user_id = ${getUserId(chatId)}
-                AND user_answers.correct_answer_count < $learningThreshold
+                SELECT words.text, words.translate, COALESCE(user_answers.correct_answer_count, 0) AS correct_answer_count
+                FROM words
+                LEFT JOIN user_answers ON user_answers.word_id = words.id AND user_answers.user_id = ${getUserId(chatId)}
+                WHERE COALESCE(user_answers.correct_answer_count, 0) < $learningThreshold
+
+                UNION
+
+                SELECT words.text, words.translate, 0 AS correct_answer_count
+                FROM words
+                LEFT JOIN user_answers ON user_answers.word_id = words.id AND user_answers.user_id = ${getUserId(chatId)}
+                WHERE user_answers.word_id IS NULL
             """.trimIndent()
             )
 
@@ -132,7 +138,7 @@ class DatabaseUserDictionary : IUserDictionary {
         val userId = getUserId(chatId)
 
         try {
-            val wordIdResult = statement.executeQuery(
+            val wordIdResult = statement.executeQuery( // получение wordId
                 """
                 SELECT id FROM words
                 WHERE text = '$original'
@@ -140,13 +146,29 @@ class DatabaseUserDictionary : IUserDictionary {
             )
             if (wordIdResult.next()) wordId = wordIdResult.getInt("id")
 
-            statement.executeUpdate(
+            val newAnswerResult = statement.executeQuery( // проверка на существование записи
                 """
+                SELECT word_id FROM user_answers
+                WHERE word_id = $wordId
+            """.trimIndent()
+            )
+            println("${newAnswerResult.getInt("word_id")}")
+            if (newAnswerResult.getInt("word_id") == 0) { //создание новой записи в user_answers
+                statement.executeUpdate(
+                    """
+                    INSERT INTO user_answers (correct_answer_count, updated_at, user_id, word_id)
+                    VALUES ($correctAnswersCount, CURRENT_TIMESTAMP, $userId, $wordId)
+                """.trimIndent()
+                )
+            } else {
+                statement.executeUpdate( //обновление существующего wordId
+                    """
                 UPDATE user_answers
                 SET correct_answer_count = correct_answer_count + $correctAnswersCount, updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = $userId AND word_id = $wordId;
             """.trimIndent()
-            )
+                )
+            }
 
         } catch (e: SQLException) {
             println(e)
