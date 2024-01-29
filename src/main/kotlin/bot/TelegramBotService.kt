@@ -78,7 +78,7 @@ class TelegramBotService(
     private val botToken: String,
 ) {
 
-    val json = Json {
+    private val json = Json {
         ignoreUnknownKeys = true
     }
     private val urlSendMessage = "$URL_TG$botToken/sendMessage"
@@ -189,7 +189,7 @@ class TelegramBotService(
         try {
             val question = trainer.getNextQuestion()
             if (question == null) {
-                sendMessage(chatId, "some err")
+                sendMessage(chatId, ALL_WORDS_LEARNED)
             } else {
                 sendQuestion(chatId, question)
             }
@@ -209,3 +209,4 @@ const val CORRECT = "Правильно!"
 const val NOT_CORRECT = "Неверно"
 const val RESET_CLICK = "reset_click"
 const val MENU_CLICK = "menu_click"
+const val ALL_WORDS_LEARNED = "Вы выучили все слова!"

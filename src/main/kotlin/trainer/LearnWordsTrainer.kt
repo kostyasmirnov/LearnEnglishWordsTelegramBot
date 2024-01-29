@@ -15,7 +15,7 @@ class LearnWordsTrainer(
     private var lastCurrentAnswer: Question? = null
 
     fun getStatistics(): Statistics {
-        val learned = userDictionary.getNumOfLearnedWords(chatId, DEFAULT_LEARNING_THRESHOLD)
+        val learned = userDictionary.getNumOfLearnedWords(chatId, learnedAnswerCount)
         val total = userDictionary.getSize(chatId)
         val percentLearned = learned * 100 / total
 
@@ -23,10 +23,10 @@ class LearnWordsTrainer(
     }
 
     fun getNextQuestion(): Question? {
-        val notLearnedList = userDictionary.getUnlearnedWords(chatId, DEFAULT_LEARNING_THRESHOLD).shuffled()
+        val notLearnedList = userDictionary.getUnlearnedWords(chatId, learnedAnswerCount).shuffled()
         if (notLearnedList.isEmpty()) return null
         val questionWords = if (notLearnedList.size < countOfQuestionWords) {
-            val learnedList = userDictionary.getLearnedWords(chatId, DEFAULT_LEARNING_THRESHOLD).shuffled()
+            val learnedList = userDictionary.getLearnedWords(chatId, learnedAnswerCount).shuffled()
             notLearnedList.shuffled()
                 .take(countOfQuestionWords) + learnedList.take(countOfQuestionWords - notLearnedList.size)
         } else {

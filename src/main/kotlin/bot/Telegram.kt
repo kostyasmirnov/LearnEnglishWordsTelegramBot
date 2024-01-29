@@ -1,10 +1,8 @@
 package bot
 
-import datastore.DEFAULT_FILE_NAME
 import datastore.DatabaseUserDictionary
 import trainer.IUserDictionary
 import trainer.LearnWordsTrainer
-import java.io.File
 import java.net.ConnectException
 
 const val BOT_POLLING_DELAY: Long = 2000

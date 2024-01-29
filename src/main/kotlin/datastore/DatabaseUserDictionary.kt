@@ -112,21 +112,6 @@ class DatabaseUserDictionary : IUserDictionary {
                 unlearnedWords.add(Word(original, translate, correctAnswersCount))
             }
 
-            if (unlearnedWords.size == 0) {
-                val allWordsIsUnlearned = statement.executeQuery(
-                    """
-                    SELECT text, translate FROM words
-                """.trimIndent()
-                )
-                while (allWordsIsUnlearned.next()) {
-                    val original = allWordsIsUnlearned.getString("text")
-                    val translate = allWordsIsUnlearned.getString("translate")
-                    val correctAnswersCount = 0
-
-                    unlearnedWords.add(Word(original, translate, correctAnswersCount))
-                }
-            }
-
         } catch (e: SQLException) {
             println(e)
         }
@@ -228,7 +213,7 @@ class DatabaseUserDictionary : IUserDictionary {
         return userId
     }
 
-    fun updateDictionary(wordsFile: File) {
+    private fun updateDictionary(wordsFile: File) {
         try {
             wordsFile.forEachLine { line ->
                 val (text, translate) = line.split("|")
@@ -247,62 +232,4 @@ class DatabaseUserDictionary : IUserDictionary {
         }
     }
 
-//    fun insertNewUser(chatId: Long) {
-//        try {
-//            val resultSet = statement.executeQuery("SELECT COUNT(*) FROM users WHERE chat_id = $chatId")
-//            resultSet.next()
-//            val userCount = resultSet.getInt(1)
-//            if (userCount == 0) {
-//                statement.executeUpdate(
-//                    """
-//                    INSERT INTO users (chat_id, created_at, username)
-//                    VALUES ($chatId, CURRENT_TIMESTAMP, 'defaultName')
-//                """.trimIndent()
-//                )
-//            }
-//
-//        } catch (e: SQLException) {
-//            println(e)
-//        }
-//    }
-
-//    fun insertNewUserAnswers(chatId: Long) {
-//        val userId = getUserId(chatId)
-//        val allWordsCount: Int
-//        var wordsUser: Int
-//        try {
-//            val allWordsCountResult = statement.executeQuery(
-//                """
-//            SELECT COUNT(id) FROM words
-//            """.trimIndent()
-//            )
-//            allWordsCount = allWordsCountResult.getInt("COUNT(id)")
-//
-//            val wordsUserResult = statement.executeQuery(
-//                """
-//                SELECT COUNT(word_id)
-//                FROM user_answers WHERE user_id = $userId
-//            """.trimIndent()
-//            )
-//            wordsUser = wordsUserResult.getInt("COUNT(word_id)")
-//
-//            if (allWordsCount != wordsUser) {
-//                val countNewWordsForUser = allWordsCount - wordsUser
-//                var wordId = allWordsCount - countNewWordsForUser
-//                while (wordsUser != allWordsCount) {
-//                    statement.executeUpdate(
-//                        """
-//                INSERT INTO user_answers (correct_answer_count, updated_at, user_id, word_id)
-//                VALUES (0, CURRENT_TIMESTAMP, $userId, $wordId)
-//                """.trimIndent()
-//                    )
-//                    Thread.sleep(200)
-//                    ++wordId
-//                    ++wordsUser
-//                }
-//            }
-//        } catch (e: SQLException) {
-//            println(e)
-//        }
-//    }
 }
