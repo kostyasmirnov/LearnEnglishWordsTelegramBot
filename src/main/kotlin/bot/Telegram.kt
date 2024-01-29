@@ -54,7 +54,6 @@ fun handleUpdate(
 
             data == LEARN_WORDS_CLICK -> {
                 telegramBotService.checkNextQuestionAndSend(trainer, chatId)
-
             }
 
             data?.startsWith(CALLBACK_DATA_ANSWER_PREFIX) == true -> {
