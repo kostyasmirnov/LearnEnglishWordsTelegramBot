@@ -26,7 +26,7 @@ fun main() {
         val variants = this.variants
             .mapIndexed { index: Int, word: Word -> "${index + 1} - ${word.translate}" }
             .joinToString(separator = "\n")
-        return this.correctAnswer.original + "\n" + variants + "\n" + "0 - выйти в меню"
+        return "Как перевести: " + this.correctAnswer.original + "?" + "\n" + variants + "\n" + "0 - выйти в меню"
     }
 
     while (true) {
@@ -36,7 +36,6 @@ fun main() {
             1 -> {
                 while (true) {
                     val question = trainer.getNextQuestion()
-                    println(question)
 
                     if (question == null) {
                         println(LEARNED_ALL_WORDS)
