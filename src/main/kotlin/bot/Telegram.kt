@@ -1,6 +1,8 @@
 package bot
 
 import datastore.DatabaseUserDictionary
+import datastore.FileUserDictionary
+import org.jetbrains.exposed.sql.Database
 import trainer.IUserDictionary
 import trainer.LearnWordsTrainer
 import java.net.ConnectException
@@ -12,7 +14,8 @@ fun main(args: Array<String>) {
     val telegramBotService = TelegramBotService(botToken = botToken)
     var lastUpdateId: Long? = 0L
     val trainers = HashMap<Long, LearnWordsTrainer>()
-    val dataBase: IUserDictionary = DatabaseUserDictionary()
+    val databaseConnection: IUserDictionary = DatabaseUserDictionary(Database.connect("jdbc:sqlite:data.db"))
+        val wordsFile: IUserDictionary = FileUserDictionary()
 
 
     while (true) {
@@ -27,7 +30,7 @@ fun main(args: Array<String>) {
                 telegramBotService = telegramBotService,
                 update = update,
                 trainers = trainers,
-                userDictionary = dataBase
+                userDictionary = DatabaseUserDictionary(Database.connect("jdbc:sqlite:data.db"))
             )
         }
         lastUpdateId = sortedUpdates?.last()?.updateId?.plus(1)

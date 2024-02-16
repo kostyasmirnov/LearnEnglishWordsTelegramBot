@@ -1,35 +1,43 @@
 package datastore
 
+import datastore.model.Tables
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
+import org.jetbrains.exposed.sql.transactions.transaction
 import trainer.IUserDictionary
 import trainer.model.Word
 import java.io.File
-import java.sql.DriverManager
+import java.sql.Connection
 import java.sql.SQLException
-import java.sql.Statement
 
-class DatabaseUserDictionary : IUserDictionary {
+class DatabaseUserDictionary(private val connection: Database) : IUserDictionary {
 
-    private val connection = DriverManager.getConnection("jdbc:sqlite:data.db")
-    private val statement: Statement = connection.createStatement()
+//    private val connection2 = DriverManager.getConnection("jdbc:sqlite:data.db")
+    //val connection = Database.connect("jdbc:sqlite:data.db", driver = "org.h2.Driver")
 
     init {
         updateDictionary(File("words.txt"))
+    }
+
+    fun getConnect() {
+        val connection = Database.connect("jdbc:sqlite:data.db")
     }
 
     override fun getNumOfLearnedWords(chatId: Long, learningThreshold: Int): Int {
         var numOfLearnedWords = 0
 
         try {
-            val resultSet = statement.executeQuery(
-                """
-                SELECT COUNT(*) FROM user_answers 
-                WHERE user_id = ${getUserId(chatId)}
-                AND correct_answer_count >= $learningThreshold
-            """.trimIndent()
-            )
+            transaction {
+                val numOfLearnedWordsResult = Tables.UserAnswers
+                    .select {
+                        (Tables.UserAnswers.userId eq getUserId(chatId)) and
+                                (Tables.UserAnswers.correctAnswerCount greaterEq learningThreshold)
+                    }
+                    .count()
 
-            if (resultSet.next()) numOfLearnedWords = resultSet.getInt("COUNT(*)")
-        } catch (e: SQLException) {
+                numOfLearnedWords = numOfLearnedWordsResult.toInt()
+            }
+        } catch (e: Exception) {
             println(e)
         }
 
@@ -40,14 +48,12 @@ class DatabaseUserDictionary : IUserDictionary {
         var wordCount = 0
 
         try {
-            val resultSet = statement.executeQuery(
-                """
-                SELECT COUNT(*) as totalWords FROM words
-            """.trimIndent()
-            )
+            transaction {
+                val wordCountResult = Tables.Words.selectAll().count()
 
-            if (resultSet.next()) wordCount = resultSet.getInt("totalWords")
-        } catch (e: SQLException) {
+                wordCount = wordCountResult.toInt()
+            }
+        } catch (e: Exception) {
             println(e)
         }
 
@@ -58,26 +64,23 @@ class DatabaseUserDictionary : IUserDictionary {
         val learnedWords = mutableListOf<Word>()
 
         try {
-            val resultSet = statement.executeQuery(
-                """
-                SELECT words.text, words.translate, user_answers.correct_answer_count
-                FROM user_answers
-                INNER JOIN words ON user_answers.word_id = words.id
-                WHERE user_answers.user_id = ${getUserId(chatId)}
-                AND user_answers.correct_answer_count >= $learningThreshold
-            """.trimIndent()
-            )
+            transaction {
+                val resultSet = Tables.UserAnswers
+                    .innerJoin(Tables.Words, { wordId }, { id })
+                    .select {
+                        (Tables.UserAnswers.userId eq getUserId(chatId)) and
+                                (Tables.UserAnswers.correctAnswerCount greaterEq learningThreshold)
+                    }
 
+                resultSet.forEach {
+                    val original = it[Tables.Words.text]
+                    val translate = it[Tables.Words.translate]
+                    val correctAnswersCount = it[Tables.UserAnswers.correctAnswerCount]
 
-            while (resultSet.next()) {
-                val original = resultSet.getString("text")
-                val translate = resultSet.getString("translate")
-                val correctAnswersCount = resultSet.getInt("correct_answer_count")
-
-                learnedWords.add(Word(original, translate, correctAnswersCount))
+                    learnedWords.add(Word(original, translate, correctAnswersCount))
+                }
             }
-
-        } catch (e: SQLException) {
+        } catch (e: Exception) {
             println(e)
         }
 
@@ -88,31 +91,36 @@ class DatabaseUserDictionary : IUserDictionary {
         val unlearnedWords = mutableListOf<Word>()
 
         try {
-            val wordsSQLResult = statement.executeQuery(
-                """
-                SELECT words.text, words.translate, COALESCE(user_answers.correct_answer_count, 0) AS correct_answer_count
-                FROM words
-                LEFT JOIN user_answers ON user_answers.word_id = words.id AND user_answers.user_id = ${getUserId(chatId)}
-                WHERE COALESCE(user_answers.correct_answer_count, 0) < $learningThreshold
+            transaction {
+                // Подзапросы для получения слов с количеством правильных ответов и без них
+                val subQueryWithCorrectAnswers = Tables.UserAnswers
+                    .slice(Tables.UserAnswers.wordId, Tables.UserAnswers.correctAnswerCount)
+                    .select { Tables.UserAnswers.userId eq getUserId(chatId) }
+                    .andWhere { Tables.UserAnswers.correctAnswerCount less learningThreshold }
 
-                UNION
+                val subQueryWithoutCorrectAnswers = Tables.UserAnswers
+                    .slice(Tables.UserAnswers.wordId)
+                    .select { Tables.UserAnswers.userId eq getUserId(chatId) }
+                    .andWhere { Tables.UserAnswers.wordId.isNull() }
 
-                SELECT words.text, words.translate, 0 AS correct_answer_count
-                FROM words
-                LEFT JOIN user_answers ON user_answers.word_id = words.id AND user_answers.user_id = ${getUserId(chatId)}
-                WHERE user_answers.word_id IS NULL
-            """.trimIndent()
-            )
+                // Выполнение запроса и добавление результатов в список unlearnedWords
+                subQueryWithCorrectAnswers.forEach {
+                    val original = it[Tables.Words.text]
+                    val translate = it[Tables.Words.translate]
+                    val correctAnswersCount = it[Tables.UserAnswers.correctAnswerCount]
 
-            while (wordsSQLResult.next()) {
-                val original = wordsSQLResult.getString("text")
-                val translate = wordsSQLResult.getString("translate")
-                val correctAnswersCount = wordsSQLResult.getInt("correct_answer_count")
+                    unlearnedWords.add(Word(original, translate, correctAnswersCount))
+                }
 
-                unlearnedWords.add(Word(original, translate, correctAnswersCount))
+                subQueryWithoutCorrectAnswers.forEach {
+                    val original = it[Tables.Words.text]
+                    val translate = it[Tables.Words.translate]
+                    val correctAnswersCount = it[Tables.UserAnswers.correctAnswerCount]
+
+                    unlearnedWords.add(Word(original, translate, correctAnswersCount))
+                }
             }
-
-        } catch (e: SQLException) {
+        } catch (e: Exception) {
             println(e)
         }
         return unlearnedWords
@@ -123,39 +131,40 @@ class DatabaseUserDictionary : IUserDictionary {
         val userId = getUserId(chatId)
 
         try {
-            val wordIdResult = statement.executeQuery( // получение wordId
-                """
-                SELECT id FROM words
-                WHERE text = '$original'
-            """.trimIndent()
-            )
-            if (wordIdResult.next()) wordId = wordIdResult.getInt("id")
 
-            val newAnswerResult = statement.executeQuery( // проверка на существование записи
-                """
-                SELECT word_id FROM user_answers
-                WHERE word_id = $wordId
-            """.trimIndent()
-            )
-            println("${newAnswerResult.getInt("word_id")}")
-            if (newAnswerResult.getInt("word_id") == 0) { //создание новой записи в user_answers
-                statement.executeUpdate(
-                    """
-                    INSERT INTO user_answers (correct_answer_count, updated_at, user_id, word_id)
-                    VALUES ($correctAnswersCount, CURRENT_TIMESTAMP, $userId, $wordId)
-                """.trimIndent()
-                )
-            } else {
-                statement.executeUpdate( //обновление существующего wordId
-                    """
-                UPDATE user_answers
-                SET correct_answer_count = correct_answer_count + $correctAnswersCount, updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = $userId AND word_id = $wordId;
-            """.trimIndent()
-                )
+            transaction(Connection.TRANSACTION_SERIALIZABLE, 1) {
+                // Получение wordId по тексту слова
+                val wordIdResult = Tables.Words.slice(Tables.Words.id)
+                    .select { Tables.Words.text eq original }
+                    .map { it[Tables.Words.id] }
+                    .firstOrNull()
+
+                wordId = wordIdResult ?: return@transaction
+
+                // Проверка существования записи в таблице user_answers
+                val userAnswerResult = Tables.UserAnswers.select { Tables.UserAnswers.wordId eq wordId }
+                    .map { it[Tables.UserAnswers.wordId] }
+                    .firstOrNull()
+
+                // Если записи не существует, вставляем новую запись
+                if (userAnswerResult == null) {
+                    Tables.UserAnswers.insert {
+                        it[correctAnswerCount] = correctAnswersCount
+                        it[updatedAt] = timestamp("updatedAt")
+                        it[Tables.UserAnswers.userId] = userId
+                        it[Tables.UserAnswers.wordId] = wordId
+                    }
+                } else {
+                    // Если запись существует, обновляем ее
+                    Tables.UserAnswers.update({ (Tables.UserAnswers.userId eq userId) and (Tables.UserAnswers.wordId eq wordId) }) {
+                        with(SqlExpressionBuilder) {
+                            it.update(correctAnswerCount, correctAnswerCount + correctAnswersCount)
+                            it[updatedAt] = timestamp("updatedAt")
+                        }
+                    }
+                }
             }
-
-        } catch (e: SQLException) {
+        } catch (e: Exception) {
             println(e)
         }
     }
@@ -164,18 +173,13 @@ class DatabaseUserDictionary : IUserDictionary {
         val userId = getUserId(chatId)
 
         try {
-            statement.executeUpdate(
-                """
-                UPDATE user_answers
-                SET correct_answer_count = 0
-                WHERE user_id = $userId;
-            """.trimIndent()
-            )
+            transaction {
+                Tables.UserAnswers.update({ Tables.UserAnswers.userId eq userId }) {
+                    it[correctAnswerCount] = 0
+                }
+            }
         } catch (e: SQLException) {
             println(e)
-        } finally {
-            statement.close()
-            connection.close()
         }
     }
 
@@ -183,30 +187,22 @@ class DatabaseUserDictionary : IUserDictionary {
         var userId = 0
 
         try {
-            val resultFindUser = statement.executeQuery(
-                """
-                SELECT id FROM users
-                WHERE chat_id = $chatId
-            """.trimIndent()
-            )
-            userId = resultFindUser.getInt("id")
-            if (userId == 0) {
-                statement.executeUpdate(
-                    """
-                INSERT INTO users (chat_id, created_at, username)
-                VALUES ($chatId, CURRENT_TIMESTAMP, 'defaultName')
-            """.trimIndent()
-                )
+            transaction {
+                val userSql = Tables.Users.select { Tables.Users.chatId eq chatId }
+                userId = userSql.first().getNullableInt(Tables.Users.chatId)?.toInt() ?: 0
+                println(userId)
 
-                statement.generatedKeys.use { generatedKeys -> //получение последнего сгенерированного id
-                    if (generatedKeys.next()) {
-                        userId = generatedKeys.getInt(1)
-                    } else {
-                        throw SQLException("Creating user failed, no ID obtained.")
-                    }
+                if (userId == null) {
+                    val insertedId = Tables.Users.insert {
+                        it[Tables.Users.chatId] = chatId
+                        it[createdAt] = timestamp("createdAt")
+                        it[username] = "defaultName"
+                    } get Tables.Users.id
+
+                    userId = insertedId
                 }
             }
-        } catch (e: SQLException) {
+        } catch (e: Exception) {
             println(e)
         }
 
@@ -215,21 +211,31 @@ class DatabaseUserDictionary : IUserDictionary {
 
     private fun updateDictionary(wordsFile: File) {
         try {
-            wordsFile.forEachLine { line ->
-                val (text, translate) = line.split("|")
+            transaction {
+                wordsFile.forEachLine { line ->
+                    val (text, translate) = line.split("|")
+                    val wordCount =
+                        Tables.Words.select { (Tables.Words.text eq text) and (Tables.Words.translate eq translate) }
+                            .count()
 
-                val resultSet =
-                    statement.executeQuery("SELECT COUNT(*) FROM words WHERE text = '$text' AND translate = '$translate'")
-                resultSet.next()
-                val wordCount = resultSet.getInt(1)
-
-                if (wordCount == 0) {
-                    statement.executeUpdate("INSERT INTO words (text, translate) VALUES ('$text', '$translate')")
+                    if (wordCount == 0L) {
+                        Tables.Words.insert {
+                            it[Tables.Words.text] = text
+                            it[Tables.Words.translate] = translate
+                        }
+                    }
                 }
             }
-        } catch (e: SQLException) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
+    fun ResultRow.getNullableInt(column: Column<Long>): Long? {
+        return try {
+            this[column]
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

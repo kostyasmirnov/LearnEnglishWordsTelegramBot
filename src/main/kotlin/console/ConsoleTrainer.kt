@@ -1,13 +1,16 @@
 package console
 
 import datastore.FileUserDictionary
+import datastore.model.Tables
 import trainer.LearnWordsTrainer
 import trainer.model.Question
 import trainer.model.Word
 
 fun main() {
-
     val chatId: Long = 1263632552
+
+    val tables = Tables()
+    tables.createTables()
 
     val trainer = try {
         LearnWordsTrainer(
