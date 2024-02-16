@@ -1,7 +1,11 @@
+package bot
+
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import trainer.LearnWordsTrainer
+import trainer.model.Question
 import java.net.ConnectException
 import java.net.URI
 import java.net.http.HttpClient
@@ -74,7 +78,7 @@ class TelegramBotService(
     private val botToken: String,
 ) {
 
-    val json = Json {
+    private val json = Json {
         ignoreUnknownKeys = true
     }
     private val urlSendMessage = "$URL_TG$botToken/sendMessage"
@@ -159,7 +163,7 @@ class TelegramBotService(
             }
             val requestBody = SendMessageRequest(
                 chatId = chatId,
-                text = question.correctAnswer.original,
+                text = HIDDEN_WORD + question.correctAnswer.original + "?",
                 replyMarkup = ReplyMarkup(
                     inlineKeyboard = questionVariants + listOf(
                         listOf(InlineKeyboard(text = "Выйти в основное меню", callbackData = MENU_CLICK))
@@ -185,7 +189,7 @@ class TelegramBotService(
         try {
             val question = trainer.getNextQuestion()
             if (question == null) {
-                sendMessage(chatId, LEARNED_ALL_WORDS)
+                sendMessage(chatId, ALL_WORDS_LEARNED)
             } else {
                 sendQuestion(chatId, question)
             }
@@ -200,7 +204,9 @@ const val URL_TG = "https://api.telegram.org/bot"
 const val STATS_CLICK = "statistics_click"
 const val LEARN_WORDS_CLICK = "learnWords_click"
 const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"
+const val HIDDEN_WORD = "Как перевести "
 const val CORRECT = "Правильно!"
 const val NOT_CORRECT = "Неверно"
 const val RESET_CLICK = "reset_click"
 const val MENU_CLICK = "menu_click"
+const val ALL_WORDS_LEARNED = "Вы выучили все слова!"

@@ -1,19 +1,35 @@
+package console
+
+import datastore.FileUserDictionary
+import datastore.model.Tables
+import trainer.LearnWordsTrainer
+import trainer.model.Question
+import trainer.model.Word
+
 fun main() {
+    val chatId: Long = 1263632552
+
+    val tables = Tables()
+    tables.createTables()
 
     val trainer = try {
-        LearnWordsTrainer(learnedAnswerCount = 3, countOfQuestionWords = 4)
+        LearnWordsTrainer(
+            chatId = chatId,
+            userDictionary = FileUserDictionary(),
+            learnedAnswerCount = 3,
+            countOfQuestionWords = 4,
+        )
 
     } catch (e: Exception) {
         println("Невозможно загрузить словарь")
         return
     }
 
-
     fun Question.asConsoleString(): String {
         val variants = this.variants
             .mapIndexed { index: Int, word: Word -> "${index + 1} - ${word.translate}" }
             .joinToString(separator = "\n")
-        return this.correctAnswer.original + "\n" + variants + "\n" + "0 - выйти в меню"
+        return "Как перевести: " + this.correctAnswer.original + "?" + "\n" + variants + "\n" + "0 - выйти в меню"
     }
 
     while (true) {
@@ -48,6 +64,11 @@ fun main() {
                 println("Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percentLearned}%")
             }
 
+            3 -> {
+                trainer.resetProgress()
+                println("Прогресс сброшен!")
+            }
+
             0 -> break
             else -> println(WARNING_MESSAGE)
         }
@@ -55,6 +76,6 @@ fun main() {
 
 }
 
-const val START_MESSAGE = "Меню:\n1 - Учить слова\n2 - Статистика\n0 - Выход"
+const val START_MESSAGE = "Меню:\n1 - Учить слова\n2 - Статистика\n3 - Сбросить прогресс\n0 - Выход"
 const val WARNING_MESSAGE = "Для выбора пункта из меню, введите цифру"
 const val LEARNED_ALL_WORDS = "Вы выучили все слова"

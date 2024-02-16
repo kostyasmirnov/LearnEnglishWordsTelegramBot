@@ -6,3 +6,6 @@ properties|характеристики|0
 triggered|срабатывает|0
 they|они|0
 listen to|слушать|0
+care|забота|0
+draw|рисовать|0
+polymorphism|полиморфизм|0
